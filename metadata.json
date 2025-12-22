@@ -1,0 +1,7 @@
+{
+  "name": "LuxeStay - Premium Villa Booking System",
+  "description": "A sophisticated villa booking platform featuring advanced filtering, direct WhatsApp integration, AI-powered descriptions, and a comprehensive admin management dashboard.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
