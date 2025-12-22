@@ -1,4 +1,6 @@
-import { initializeApp, getApp, getApps } from "firebase/app";
+
+// Fix: Use named imports for "firebase/app" to resolve property non-existence errors in the modular SDK.
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 
 // Note: If you have a real Firebase project, replace these values.
@@ -13,6 +15,6 @@ const firebaseConfig = {
 };
 
 // Fix: Singleton pattern for Firebase App initialization using modular SDK methods.
-// Using getApps() and getApp() ensures we don't attempt to re-initialize an existing app instance.
+// Using getApps() and getApp() directly from named exports as required by the modular SDK.
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 export const db = getFirestore(app);

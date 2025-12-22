@@ -19,9 +19,9 @@ const HomePage: React.FC<HomePageProps> = ({ villas, onExplore, onViewDetails })
   const [searchFilters, setSearchFilters] = useState<VillaFilters>({
     location: '',
     minPrice: 0,
-    maxPrice: 150000,
+    maxPrice: 200000,
     bedrooms: 0,
-    guests: 2,
+    guests: 0, // Changed from 2 to 0 to prevent accidental filtering
     checkIn: '',
     checkOut: ''
   });
@@ -46,10 +46,8 @@ const HomePage: React.FC<HomePageProps> = ({ villas, onExplore, onViewDetails })
 
   const stayDuration = useMemo(() => {
     if (searchFilters.checkIn && searchFilters.checkOut) {
-      const [y1, m1, d1] = searchFilters.checkIn.split('-').map(Number);
-      const [y2, m2, d2] = searchFilters.checkOut.split('-').map(Number);
-      const start = new Date(y1, m1 - 1, d1);
-      const end = new Date(y2, m2 - 1, d2);
+      const start = new Date(searchFilters.checkIn);
+      const end = new Date(searchFilters.checkOut);
       const diff = end.getTime() - start.getTime();
       const nights = Math.round(diff / (1000 * 60 * 60 * 24));
       return nights > 0 ? nights : 0;
@@ -164,7 +162,7 @@ const HomePage: React.FC<HomePageProps> = ({ villas, onExplore, onViewDetails })
               <input 
                 type="range"
                 min="5000"
-                max="200000"
+                max="300000"
                 step="5000"
                 className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-amber-500 mt-2"
                 value={searchFilters.maxPrice}
@@ -179,6 +177,7 @@ const HomePage: React.FC<HomePageProps> = ({ villas, onExplore, onViewDetails })
                 value={searchFilters.guests}
                 onChange={(e) => setSearchFilters({...searchFilters, guests: Number(e.target.value)})}
               >
+                <option value={0}>Any</option>
                 {[...Array(20)].map((_, i) => (
                   <option key={i} value={i+1}>{i+1} Guests</option>
                 ))}
