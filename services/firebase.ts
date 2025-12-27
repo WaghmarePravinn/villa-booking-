@@ -1,20 +1,22 @@
 
-// Fix: Use named imports for "firebase/app" to resolve property non-existence errors in the modular SDK.
-import { initializeApp, getApps, getApp } from "firebase/app";
+import { initializeApp, getApp, getApps } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 
-// Note: If you have a real Firebase project, replace these values.
-// The app will fallback to localStorage if this configuration is invalid or permissions are denied.
+/**
+ * INSTRUCTIONS FOR USER:
+ * 1. Go to Firebase Console (console.firebase.google.com)
+ * 2. Create a Project.
+ * 3. Add a "Web App" to the project.
+ * 4. Copy the firebaseConfig object provided by Firebase and paste it below.
+ */
 const firebaseConfig = {
-  apiKey: "DEMO_KEY_PLACEHOLDER",
-  authDomain: "peak-stay-destination.firebaseapp.com",
-  projectId: "peak-stay-destination",
-  storageBucket: "peak-stay-destination.appspot.com",
-  messagingSenderId: "000000000000",
-  appId: "1:000000000000:web:0000000000000000000000"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID"
 };
 
-// Fix: Singleton pattern for Firebase App initialization using modular SDK methods.
-// Using getApps() and getApp() directly from named exports as required by the modular SDK.
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 export const db = getFirestore(app);

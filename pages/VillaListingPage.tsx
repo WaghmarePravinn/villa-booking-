@@ -17,7 +17,7 @@ const VillaListingPage: React.FC<VillaListingPageProps> = ({ villas, onViewDetai
   const [filters, setFilters] = useState<VillaFilters>(initialFilters || {
     location: '',
     minPrice: 0,
-    maxPrice: 300000,
+    maxPrice: 150000,
     bedrooms: 0,
     guests: 0,
     checkIn: '',
@@ -47,23 +47,12 @@ const VillaListingPage: React.FC<VillaListingPageProps> = ({ villas, onViewDetai
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Fix: Correctly handle HOTSPOT_LOCATIONS as objects and access the .name property
   const filteredLocations = useMemo(() => {
     const query = filters.location.toLowerCase().trim();
     if (!query) return HOTSPOT_LOCATIONS;
     return HOTSPOT_LOCATIONS.filter(loc => loc.name.toLowerCase().includes(query));
   }, [filters.location]);
-
-  // Deterministic fake availability check to make the date filter "work"
-  const isVillaAvailable = (villaId: string, checkIn?: string, checkOut?: string) => {
-    if (!checkIn || !checkOut) return true;
-    
-    // Create a simple deterministic "hash" based on villaId and dates
-    const dateHash = checkIn.length + checkOut.length + (new Date(checkIn).getDate());
-    const villaNum = parseInt(villaId.replace(/\D/g, '')) || villaId.length;
-    
-    // Simulate that ~20% of villas are booked for any given date range
-    return (villaNum + dateHash) % 5 !== 0;
-  };
 
   const filteredAndSortedVillas = useMemo(() => {
     let result = villas.filter(villa => {
@@ -72,15 +61,12 @@ const VillaListingPage: React.FC<VillaListingPageProps> = ({ villas, onViewDetai
         villa.name.toLowerCase().includes(filters.location.toLowerCase());
       
       const matchPrice = villa.pricePerNight >= (filters.minPrice || 0) && 
-        villa.pricePerNight <= (filters.maxPrice || 300000);
+        villa.pricePerNight <= (filters.maxPrice || 150000);
       
       const matchBedrooms = filters.bedrooms === 0 || villa.bedrooms >= filters.bedrooms;
       const matchGuests = !filters.guests || filters.guests === 0 || villa.capacity >= filters.guests;
       
-      // Apply simulated availability filter
-      const matchAvailability = isVillaAvailable(villa.id, filters.checkIn, filters.checkOut);
-      
-      return matchLocation && matchPrice && matchBedrooms && matchGuests && matchAvailability;
+      return matchLocation && matchPrice && matchBedrooms && matchGuests;
     });
 
     switch (sortBy) {
@@ -104,8 +90,10 @@ const VillaListingPage: React.FC<VillaListingPageProps> = ({ villas, onViewDetai
 
   const stayDuration = useMemo(() => {
     if (filters.checkIn && filters.checkOut) {
-      const start = new Date(filters.checkIn);
-      const end = new Date(filters.checkOut);
+      const [y1, m1, d1] = filters.checkIn.split('-').map(Number);
+      const [y2, m2, d2] = filters.checkOut.split('-').map(Number);
+      const start = new Date(y1, m1 - 1, d1);
+      const end = new Date(y2, m2 - 1, d2);
       const diff = end.getTime() - start.getTime();
       const nights = Math.round(diff / (1000 * 60 * 60 * 24));
       return nights > 0 ? nights : 0;
@@ -117,7 +105,7 @@ const VillaListingPage: React.FC<VillaListingPageProps> = ({ villas, onViewDetai
     setFilters({
       location: '',
       minPrice: 0,
-      maxPrice: 300000,
+      maxPrice: 150000,
       bedrooms: 0,
       guests: 0,
       checkIn: '',
@@ -256,7 +244,7 @@ const VillaListingPage: React.FC<VillaListingPageProps> = ({ villas, onViewDetai
                 <input 
                   type="range"
                   min="5000"
-                  max="300000"
+                  max="150000"
                   step="5000"
                   className="w-full h-1.5 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-amber-500"
                   value={filters.maxPrice}
@@ -350,9 +338,7 @@ const VillaListingPage: React.FC<VillaListingPageProps> = ({ villas, onViewDetai
             <DateRangePicker 
               startDate={filters.checkIn || ''} 
               endDate={filters.checkOut || ''} 
-              onChange={(start, end) => {
-                setFilters({...filters, checkIn: start, checkOut: end});
-              }}
+              onChange={(start, end) => setFilters({...filters, checkIn: start, checkOut: end})}
               onClose={() => setShowDatePicker(false)}
             />
           </div>

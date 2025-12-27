@@ -6,14 +6,17 @@ import VillaListingPage from './pages/VillaListingPage';
 import VillaDetailPage from './pages/VillaDetailPage';
 import AboutPage from './pages/AboutPage';
 import AdminDashboard from './pages/AdminDashboard';
-import LoginPage from './pages/LoginPage';
 import ServicesPage from './pages/ServicesPage';
 import TestimonialsPage from './pages/TestimonialsPage';
+import LoginPage from './pages/LoginPage';
 import { User, UserRole, Villa, VillaFilters } from './types';
-import { getVillas, createVilla, updateVillaById, deleteVillaById, seedDatabase } from './services/villaService';
+import { subscribeToVillas, createVilla, updateVillaById, deleteVillaById } from './services/villaService';
 
 const App: React.FC = () => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    const saved = localStorage.getItem('peak_stay_current_user');
+    return saved ? JSON.parse(saved) : null;
+  });
   const [villas, setVillas] = useState<Villa[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState<string>('home');
@@ -22,15 +25,15 @@ const App: React.FC = () => {
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {
-    fetchVillas();
-  }, []);
+    // REAL-TIME SYNC: Subscribe to the villas collection
+    const unsubscribe = subscribeToVillas((updatedVillas) => {
+      setVillas(updatedVillas);
+      setLoading(false);
+    });
 
-  const fetchVillas = async () => {
-    setLoading(true);
-    const data = await getVillas();
-    setVillas(data);
-    setLoading(false);
-  };
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, []);
 
   const handleNavigate = (page: string) => {
     setIsTransitioning(true);
@@ -42,13 +45,19 @@ const App: React.FC = () => {
     }, 300);
   };
 
-  const handleLogin = (username: string, role: UserRole) => {
-    setUser({ id: Date.now().toString(), username, role });
-    handleNavigate('home');
+  const handleLoginSuccess = (loggedInUser: User) => {
+    setUser(loggedInUser);
+    localStorage.setItem('peak_stay_current_user', JSON.stringify(loggedInUser));
+    if (loggedInUser.role === UserRole.ADMIN) {
+      handleNavigate('admin');
+    } else {
+      handleNavigate('home');
+    }
   };
 
   const handleLogout = () => {
     setUser(null);
+    localStorage.removeItem('peak_stay_current_user');
     handleNavigate('home');
   };
 
@@ -79,28 +88,30 @@ const App: React.FC = () => {
         return <ServicesPage />;
       case 'testimonials':
         return <TestimonialsPage />;
+      case 'login':
+        return <LoginPage onLogin={handleLoginSuccess} />;
       case 'admin':
-        return user?.role === UserRole.ADMIN ? (
+        if (!user || user.role !== UserRole.ADMIN) {
+          return <LoginPage onLogin={handleLoginSuccess} />;
+        }
+        return (
           <AdminDashboard 
             villas={villas} 
-            onRefreshData={fetchVillas}
+            onRefreshData={async () => { /* Logic handled by subscriber */ }}
             onAddVilla={async (v) => {
               const { id: _, ...payload } = v;
-              const newId = await createVilla(payload);
-              setVillas(prev => [...prev, { ...v, id: newId }]);
-            }} onUpdateVilla={async (v) => {
+              await createVilla(payload);
+            }} 
+            onUpdateVilla={async (v) => {
               await updateVillaById(v.id, v);
-              setVillas(villas.map(item => item.id === v.id ? v : item));
-            }} onDeleteVilla={async (id) => {
-              if (window.confirm("Delete permanently?")) {
+            }} 
+            onDeleteVilla={async (id) => {
+              if (window.confirm("Delete permanently from cloud?")) {
                 await deleteVillaById(id);
-                setVillas(villas.filter(v => v.id !== id));
               }
             }} 
           />
-        ) : <LoginPage onLogin={handleLogin} />;
-      case 'login':
-        return <LoginPage onLogin={handleLogin} />;
+        );
       default:
         return <HomePage villas={villas} onExplore={handleExplore} onViewDetails={handleViewDetails} />;
     }
@@ -115,8 +126,8 @@ const App: React.FC = () => {
           <i className="fa-solid fa-hotel text-4xl text-amber-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></i>
         </div>
         <div className="text-center">
-          <p className="text-white font-serif text-2xl mb-2 animate-reveal">Peak Stay Destination</p>
-          <p className="text-slate-400 font-bold tracking-[0.3em] uppercase text-[10px] animate-pulse">Syncing Cloud Luxury...</p>
+          <p className="text-white font-serif text-2xl mb-2">Peak Stay Destination</p>
+          <p className="text-slate-400 font-bold tracking-[0.3em] uppercase text-[10px] animate-pulse">Syncing with Cloud Nodes...</p>
         </div>
       </div>
     );
@@ -124,8 +135,8 @@ const App: React.FC = () => {
 
   return (
     <Layout 
-      user={user} 
-      onLogout={handleLogout} 
+      user={user}
+      onLogout={handleLogout}
       onNavigate={handleNavigate}
       currentPage={currentPage}
     >

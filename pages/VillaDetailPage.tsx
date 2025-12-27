@@ -1,8 +1,9 @@
 
-import React, { useEffect, useState, useRef, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Villa } from '../types';
 import { WHATSAPP_NUMBER } from '../constants';
 import DateRangePicker from '../components/DateRangePicker';
+import { saveLead } from '../services/leadService';
 
 interface VillaDetailPageProps {
   villa: Villa;
@@ -47,11 +48,20 @@ const VillaDetailPage: React.FC<VillaDetailPageProps> = ({ villa, onBack }) => {
     // Simulate API call
     setTimeout(() => {
       setIsCheckingAvailability(false);
-      setIsAvailable(true); // Always available in this demo
+      setIsAvailable(true); 
     }, 1500);
   };
 
   const handleWhatsApp = () => {
+    // Save lead for admin
+    saveLead({
+      villaId: villa.id,
+      villaName: villa.name,
+      source: 'WhatsApp',
+      checkIn: checkIn || undefined,
+      checkOut: checkOut || undefined
+    });
+
     let messageStr = `Hi, I'm interested in booking ${villa.name} in ${villa.location}.`;
     if (checkIn && checkOut) {
       messageStr += ` Dates: ${checkIn} to ${checkOut} (${nights} nights). Guests: ${guestCount}.`;

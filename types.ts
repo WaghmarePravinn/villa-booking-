@@ -9,6 +9,7 @@ export interface User {
   id: string;
   username: string;
   role: UserRole;
+  email?: string;
 }
 
 export interface Villa {
@@ -56,4 +57,16 @@ export interface VillaFilters {
   checkIn?: string;
   checkOut?: string;
   guests?: number;
+}
+
+export interface Lead {
+  id: string;
+  villaId: string;
+  villaName: string;
+  timestamp: string;
+  status: 'new' | 'contacted' | 'booked' | 'lost';
+  source: 'WhatsApp' | 'Direct Inquiry';
+  customerName?: string;
+  checkIn?: string;
+  checkOut?: string;
 }

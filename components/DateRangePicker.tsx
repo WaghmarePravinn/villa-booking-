@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 
 interface DateRangePickerProps {
   startDate: string;
@@ -9,18 +9,33 @@ interface DateRangePickerProps {
 }
 
 const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, endDate, onChange, onClose }) => {
-  // Use local date for initial view
   const [viewDate, setViewDate] = useState(() => {
     if (startDate) {
       const [y, m, d] = startDate.split('-').map(Number);
-      return new Date(y, m - 1, 1);
+      if (!isNaN(y) && !isNaN(m)) {
+        return new Date(y, m - 1, 1);
+      }
     }
     return new Date();
   });
 
+  // Sync view date if startDate prop changes (e.g. from external clear or manual entry)
+  useEffect(() => {
+    if (startDate) {
+      const [y, m, d] = startDate.split('-').map(Number);
+      if (!isNaN(y) && !isNaN(m)) {
+        const newView = new Date(y, m - 1, 1);
+        if (newView.getMonth() !== viewDate.getMonth() || newView.getFullYear() !== viewDate.getFullYear()) {
+          setViewDate(newView);
+        }
+      }
+    }
+  }, [startDate]);
+
+  const [hoverDate, setHoverDate] = useState<string | null>(null);
+
   const daysOfWeek = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
-  // Helper to get YYYY-MM-DD in local time, completely avoiding timezone offsets
   const toLocalDateString = (date: Date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -38,8 +53,12 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, endDate, o
     for (let i = 0; i < firstDay; i++) days.push(null);
     for (let i = 1; i <= daysInMonth; i++) days.push(new Date(year, month, i));
     
+    // Robust month naming fallback
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const monthName = date.toLocaleString('default', { month: 'long' }) || monthNames[month];
+    
     return {
-      name: date.toLocaleString('default', { month: 'long' }),
+      name: monthName,
       year,
       days
     };
@@ -65,24 +84,18 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, endDate, o
     e.stopPropagation();
     const dateStr = toLocalDateString(date);
     
-    // Logic for range selection
     if (!startDate || (startDate && endDate)) {
-      // Start a new range
       onChange(dateStr, '');
     } else {
-      // We have a start date but no end date
       if (dateStr < startDate) {
-        // New start date if selected is earlier
         onChange(dateStr, '');
       } else if (dateStr === startDate) {
-        // Clear if same date
         onChange('', '');
       } else {
-        // Finish the range
         onChange(startDate, dateStr);
         if (onClose) {
-          // Small delay for visual feedback before closing
-          setTimeout(onClose, 200);
+          // Add a small delay for visual feedback before closing
+          setTimeout(onClose, 300);
         }
       }
     }
@@ -95,9 +108,18 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, endDate, o
   };
 
   const isInRange = (date: Date | null) => {
-    if (!date || !startDate || !endDate) return false;
+    if (!date || !startDate) return false;
     const dStr = toLocalDateString(date);
-    return dStr > startDate && dStr < endDate;
+    
+    if (endDate) {
+      return dStr > startDate && dStr < endDate;
+    }
+    
+    if (hoverDate && dStr > startDate && dStr <= hoverDate) {
+      return true;
+    }
+    
+    return false;
   };
 
   const isPast = (date: Date | null) => {
@@ -111,47 +133,50 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, endDate, o
 
   return (
     <div 
-      className="bg-white rounded-[2rem] shadow-[0_30px_70px_rgba(0,0,0,0.15)] border border-gray-100 p-6 md:p-10 w-full max-w-4xl animate-fade-in-up"
+      className="bg-white rounded-[2.5rem] shadow-[0_40px_100px_rgba(0,0,0,0.2)] border border-gray-100 p-8 md:p-12 w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-scale"
       onClick={(e) => e.stopPropagation()}
     >
-      <div className="flex justify-between items-center border-b border-gray-100 mb-8 pb-4">
-        <div className="flex space-x-6 md:space-x-12">
-          <button className="text-xs md:text-sm font-black text-slate-900 border-b-2 border-amber-600 pb-4 tracking-tight">Select Dates</button>
-          <button className="text-xs md:text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors tracking-tight">Flexible?</button>
+      <div className="flex justify-between items-center border-b border-gray-100 mb-10 pb-6 sticky top-0 bg-white z-10">
+        <div className="flex space-x-8">
+          <div className="flex flex-col">
+            <span className="text-[9px] font-black text-amber-600 uppercase tracking-widest mb-1">Select Stay</span>
+            <span className="text-xl font-bold text-slate-900 font-serif">Dates</span>
+          </div>
         </div>
         <button 
           onClick={(e) => { e.stopPropagation(); onChange('', ''); }}
-          className="text-xs font-bold text-amber-600 hover:text-amber-700 underline decoration-2 underline-offset-4"
+          className="px-6 py-2 rounded-xl text-[10px] font-black text-slate-400 uppercase tracking-widest hover:bg-gray-50 hover:text-red-500 transition-all border border-transparent hover:border-red-100"
         >
           Clear Dates
         </button>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-8 md:gap-16 relative">
+      <div className="flex flex-col md:flex-row gap-12 md:gap-20 relative">
         <button 
           onClick={handlePrevMonth}
-          className="absolute left-[-5px] md:left-[-15px] top-0 p-3 hover:bg-gray-50 rounded-full transition-all z-20 active:scale-90"
+          className="absolute left-[-5px] md:left-[-15px] top-0 p-4 hover:bg-gray-50 rounded-2xl transition-all z-20 group"
         >
-          <i className="fa-solid fa-chevron-left text-xs text-slate-400"></i>
+          <i className="fa-solid fa-chevron-left text-xs text-slate-300 group-hover:text-amber-500"></i>
         </button>
         <button 
           onClick={handleNextMonth}
-          className="absolute right-[-5px] md:right-[-15px] top-0 p-3 hover:bg-gray-50 rounded-full transition-all z-20 active:scale-90"
+          className="absolute right-[-5px] md:right-[-15px] top-0 p-4 hover:bg-gray-50 rounded-2xl transition-all z-20 group"
         >
-          <i className="fa-solid fa-chevron-right text-xs text-slate-400"></i>
+          <i className="fa-solid fa-chevron-right text-xs text-slate-300 group-hover:text-amber-500"></i>
         </button>
 
         {months.map((m, mIdx) => (
-          <div key={mIdx} className="flex-1">
-            <h3 className="text-center font-black text-slate-800 mb-6 font-serif text-base md:text-lg">
+          <div key={`${m.name}-${m.year}-${mIdx}`} className="flex-1">
+            <h3 className="text-center font-bold text-slate-800 mb-8 font-serif text-lg">
               {m.name} {m.year}
             </h3>
             <div className="grid grid-cols-7 gap-y-1">
               {daysOfWeek.map(d => (
-                <div key={d} className="text-center text-[9px] md:text-[10px] font-black text-gray-300 uppercase mb-4 tracking-widest">{d}</div>
+                <div key={d} className="text-center text-[9px] font-black text-slate-300 uppercase mb-4 tracking-widest">{d}</div>
               ))}
               {m.days.map((day, dIdx) => {
                 if (!day) return <div key={`empty-${mIdx}-${dIdx}`} />;
+                const dStr = toLocalDateString(day);
                 const selected = isSelected(day);
                 const range = isInRange(day);
                 const past = isPast(day);
@@ -160,12 +185,16 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, endDate, o
                   <button
                     key={dIdx}
                     disabled={past}
+                    onMouseEnter={() => !endDate && setHoverDate(dStr)}
+                    onMouseLeave={() => setHoverDate(null)}
                     onClick={(e) => handleDateClick(e, day)}
                     className={`
-                      relative h-10 md:h-12 w-full flex items-center justify-center text-xs md:text-sm font-bold transition-all
-                      ${past ? 'text-gray-200 cursor-not-allowed' : 'text-slate-700 hover:bg-amber-100 hover:text-amber-800 hover:rounded-full'}
-                      ${selected ? 'bg-slate-900 !text-white rounded-full z-10 shadow-lg scale-110' : ''}
-                      ${range ? 'bg-amber-50 text-amber-900' : ''}
+                      relative h-12 w-full flex items-center justify-center text-sm font-bold transition-all
+                      ${past ? 'text-gray-200 cursor-not-allowed' : 'text-slate-700 hover:z-10'}
+                      ${selected ? 'bg-slate-900 !text-white rounded-full z-20 shadow-xl' : ''}
+                      ${range && !selected ? 'bg-amber-50 text-amber-900' : ''}
+                      ${range && !selected && !endDate ? 'bg-amber-50/50' : ''}
+                      ${!past && !selected && !range ? 'hover:bg-gray-50 hover:rounded-xl' : ''}
                     `}
                   >
                     {day.getDate()}
@@ -183,12 +212,23 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, endDate, o
         ))}
       </div>
 
-      <div className="mt-8 border-t border-gray-100 pt-6">
-        <div className="flex items-center justify-between text-slate-500 text-[10px] font-black uppercase tracking-widest">
-          <span>{startDate ? `From: ${startDate}` : 'Pick start date'}</span>
-          <i className="fa-solid fa-arrow-right-long text-amber-500"></i>
-          <span>{endDate ? `To: ${endDate}` : 'Pick end date'}</span>
-        </div>
+      <div className="mt-12 pt-8 border-t border-gray-100 flex flex-col md:flex-row items-center justify-between gap-6 sticky bottom-0 bg-white z-10">
+         <div className="flex gap-10 items-center">
+            <div className="flex flex-col">
+              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Check-in</span>
+              <span className="text-sm font-bold text-slate-900">{startDate || 'Not selected'}</span>
+            </div>
+            <i className="fa-solid fa-arrow-right-long text-amber-300"></i>
+            <div className="flex flex-col">
+              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Check-out</span>
+              <span className="text-sm font-bold text-slate-900">{endDate || 'Not selected'}</span>
+            </div>
+         </div>
+         {startDate && endDate && (
+           <div className="bg-emerald-50 text-emerald-600 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest animate-reveal">
+             Range Set
+           </div>
+         )}
       </div>
     </div>
   );
