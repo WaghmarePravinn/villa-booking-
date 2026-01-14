@@ -6,53 +6,69 @@ import VillaListingPage from './pages/VillaListingPage';
 import VillaDetailPage from './pages/VillaDetailPage';
 import AboutPage from './pages/AboutPage';
 import AdminDashboard from './pages/AdminDashboard';
+import UserDashboard from './pages/UserDashboard';
 import ServicesPage from './pages/ServicesPage';
 import TestimonialsPage from './pages/TestimonialsPage';
 import LoginPage from './pages/LoginPage';
-import { User, UserRole, Villa, VillaFilters } from './types';
+import { User, UserRole, Villa, VillaFilters, AppTheme, SiteSettings } from './types';
 import { subscribeToVillas, createVilla, updateVillaById, deleteVillaById } from './services/villaService';
+import { subscribeToSettings, DEFAULT_SETTINGS } from './services/settingsService';
+import { isSupabaseAvailable } from './services/supabase';
+import { INITIAL_VILLAS } from './constants';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('peak_stay_current_user');
     return saved ? JSON.parse(saved) : null;
   });
-  const [villas, setVillas] = useState<Villa[]>([]);
+  
+  const [villas, setVillas] = useState<Villa[]>(isSupabaseAvailable ? [] : INITIAL_VILLAS);
+  const [settings, setSettings] = useState<SiteSettings>({
+    ...DEFAULT_SETTINGS,
+    activeTheme: AppTheme.REPUBLIC_DAY,
+    promoText: "REPUBLIC DAY SPECIAL: CELEBRATE WITH FLAT 26% OFF ON ALL STAYS"
+  });
   const [loading, setLoading] = useState(true);
+  
   const [currentPage, setCurrentPage] = useState<string>('home');
   const [selectedVillaId, setSelectedVillaId] = useState<string | null>(null);
   const [currentFilters, setCurrentFilters] = useState<VillaFilters | undefined>(undefined);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {
-    // REAL-TIME SYNC: Subscribe to the villas collection
-    const unsubscribe = subscribeToVillas((updatedVillas) => {
+    const unsubscribeVillas = subscribeToVillas((updatedVillas) => {
       setVillas(updatedVillas);
       setLoading(false);
     });
 
-    // Cleanup subscription on unmount
-    return () => unsubscribe();
+    const unsubscribeSettings = subscribeToSettings((newSettings) => {
+      setSettings(newSettings);
+      document.body.className = 'theme-republic-day'; // Force the theme for this specific celebration
+    });
+
+    const timer = setTimeout(() => setLoading(false), 2000);
+    return () => {
+      unsubscribeVillas();
+      unsubscribeSettings();
+      clearTimeout(timer);
+    };
   }, []);
 
   const handleNavigate = (page: string) => {
+    if (currentPage === page && page !== 'villa-detail') return;
     setIsTransitioning(true);
     setTimeout(() => {
       if (page !== 'villas') setCurrentFilters(undefined);
       setCurrentPage(page);
       setIsTransitioning(false);
       window.scrollTo({ top: 0, behavior: 'instant' });
-    }, 300);
+    }, 200);
   };
 
   const handleLoginSuccess = (loggedInUser: User) => {
     setUser(loggedInUser);
     localStorage.setItem('peak_stay_current_user', JSON.stringify(loggedInUser));
-    if (loggedInUser.role === UserRole.ADMIN) {
-      handleNavigate('admin');
-    } else {
-      handleNavigate('home');
-    }
+    handleNavigate(loggedInUser.role === UserRole.ADMIN ? 'admin' : 'user-dashboard');
   };
 
   const handleLogout = () => {
@@ -74,60 +90,57 @@ const App: React.FC = () => {
   const renderPage = () => {
     if (currentPage === 'villa-detail' && selectedVillaId) {
       const villa = villas.find(v => v.id === selectedVillaId);
-      if (villa) return <VillaDetailPage villa={villa} onBack={() => handleNavigate('villas')} />;
+      if (villa) return <VillaDetailPage villa={villa} user={user} onBack={() => handleNavigate('villas')} />;
     }
 
     switch (currentPage) {
-      case 'home':
-        return <HomePage villas={villas} onExplore={handleExplore} onViewDetails={handleViewDetails} />;
-      case 'villas':
-        return <VillaListingPage villas={villas} onViewDetails={handleViewDetails} initialFilters={currentFilters} />;
-      case 'about':
-        return <AboutPage />;
-      case 'services':
-        return <ServicesPage />;
-      case 'testimonials':
-        return <TestimonialsPage />;
-      case 'login':
-        return <LoginPage onLogin={handleLoginSuccess} />;
+      case 'home': return <HomePage villas={villas} settings={settings} onExplore={handleExplore} onViewDetails={handleViewDetails} />;
+      case 'villas': return <VillaListingPage villas={villas} onViewDetails={handleViewDetails} initialFilters={currentFilters} />;
+      case 'about': return <AboutPage />;
+      case 'services': return <ServicesPage />;
+      case 'testimonials': return <TestimonialsPage />;
+      case 'login': return <LoginPage onLogin={handleLoginSuccess} />;
+      case 'user-dashboard':
+        if (!user) return <LoginPage onLogin={handleLoginSuccess} />;
+        return <UserDashboard user={user} villas={villas} onViewVilla={handleViewDetails} />;
       case 'admin':
-        if (!user || user.role !== UserRole.ADMIN) {
-          return <LoginPage onLogin={handleLoginSuccess} />;
-        }
+        if (!user || user.role !== UserRole.ADMIN) return <LoginPage onLogin={handleLoginSuccess} />;
         return (
           <AdminDashboard 
             villas={villas} 
-            onRefreshData={async () => { /* Logic handled by subscriber */ }}
+            settings={settings}
+            onRefreshData={async () => {}} 
             onAddVilla={async (v) => {
-              const { id: _, ...payload } = v;
-              await createVilla(payload);
+              const { id, ...payload } = v;
+              await createVilla(payload as Omit<Villa, 'id'>);
             }} 
-            onUpdateVilla={async (v) => {
-              await updateVillaById(v.id, v);
+            onUpdateVilla={async (v) => { 
+              await updateVillaById(v.id, v); 
             }} 
-            onDeleteVilla={async (id) => {
-              if (window.confirm("Delete permanently from cloud?")) {
-                await deleteVillaById(id);
-              }
+            onDeleteVilla={async (id) => { 
+              await deleteVillaById(id); 
             }} 
           />
         );
-      default:
-        return <HomePage villas={villas} onExplore={handleExplore} onViewDetails={handleViewDetails} />;
+      default: return <HomePage villas={villas} settings={settings} onExplore={handleExplore} onViewDetails={handleViewDetails} />;
     }
   };
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-slate-900 flex flex-col items-center justify-center space-y-8 z-[9999]">
+      <div className="fixed inset-0 bg-sky-50 flex flex-col items-center justify-center space-y-8 z-[9999]">
         <div className="relative">
-          <div className="w-24 h-24 border-2 border-amber-500/20 rounded-full animate-ping absolute inset-0"></div>
-          <div className="w-24 h-24 border-t-2 border-amber-500 rounded-full animate-spin"></div>
-          <i className="fa-solid fa-hotel text-4xl text-amber-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></i>
+          <div className="w-24 h-24 border-2 border-orange-200 rounded-full animate-ping absolute inset-0"></div>
+          <div className="w-24 h-24 border-t-2 border-orange-500 rounded-full animate-spin"></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-1">
+             <div className="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
+             <div className="w-1.5 h-1.5 bg-white border border-gray-200 rounded-full"></div>
+             <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+          </div>
         </div>
         <div className="text-center">
-          <p className="text-white font-serif text-2xl mb-2">Peak Stay Destination</p>
-          <p className="text-slate-400 font-bold tracking-[0.3em] uppercase text-[10px] animate-pulse">Syncing with Cloud Nodes...</p>
+          <p className="text-sky-900 font-serif text-3xl mb-2">Peak Stay</p>
+          <p className="text-orange-500 font-bold tracking-[0.4em] uppercase text-[10px] animate-pulse">Republic Day 2025 Edition</p>
         </div>
       </div>
     );
@@ -136,11 +149,12 @@ const App: React.FC = () => {
   return (
     <Layout 
       user={user}
+      settings={settings}
       onLogout={handleLogout}
       onNavigate={handleNavigate}
       currentPage={currentPage}
     >
-      <div className={`transition-all duration-300 transform ${isTransitioning ? 'opacity-0 translate-y-4 scale-95' : 'opacity-100 translate-y-0 scale-100'}`}>
+      <div className={`transition-all duration-300 transform ${isTransitioning ? 'opacity-0 translate-y-4 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
         {renderPage()}
       </div>
     </Layout>

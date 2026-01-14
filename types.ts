@@ -5,6 +5,21 @@ export enum UserRole {
   GUEST = 'GUEST'
 }
 
+export enum AppTheme {
+  NEW_YEAR = 'NEW_YEAR',
+  DIWALI = 'DIWALI',
+  HOLI = 'HOLI',
+  REPUBLIC_DAY = 'REPUBLIC_DAY',
+  WEEKEND_OFFER = 'WEEKEND_OFFER',
+  SUMMER_WEEKEND = 'SUMMER_WEEKEND',
+  DEFAULT = 'DEFAULT'
+}
+
+export interface SiteSettings {
+  activeTheme: AppTheme;
+  promoText: string;
+}
+
 export interface User {
   id: string;
   username: string;
@@ -22,7 +37,8 @@ export interface Villa {
   capacity: number;
   description: string;
   longDescription?: string;
-  imageUrl: string;
+  imageUrls: string[]; 
+  videoUrls: string[]; 
   amenities: string[];
   includedServices: string[];
   isFeatured: boolean;
@@ -66,6 +82,7 @@ export interface Lead {
   timestamp: string;
   status: 'new' | 'contacted' | 'booked' | 'lost';
   source: 'WhatsApp' | 'Direct Inquiry';
+  userId?: string;
   customerName?: string;
   checkIn?: string;
   checkOut?: string;

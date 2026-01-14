@@ -1,20 +1,27 @@
 
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import { Villa, VillaFilters } from '../types';
+import { Villa, VillaFilters, SiteSettings, AppTheme } from '../types';
 import VillaCard from '../components/VillaCard';
 import DateRangePicker from '../components/DateRangePicker';
-import { SERVICES, TESTIMONIALS, BRAND_NAME, HOTSPOT_LOCATIONS } from '../constants';
+import { SERVICES, BRAND_NAME, HOTSPOT_LOCATIONS } from '../constants';
 
 interface HomePageProps {
   villas: Villa[];
+  settings: SiteSettings;
   onExplore: (filters?: VillaFilters) => void;
   onViewDetails: (id: string) => void;
 }
 
-const HomePage: React.FC<HomePageProps> = ({ villas, onExplore, onViewDetails }) => {
+const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onViewDetails }) => {
   const [showPicker, setShowPicker] = useState(false);
   const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [showFestivePopup, setShowFestivePopup] = useState(false);
+  const [liveBooking, setLiveBooking] = useState<{name: string, location: string} | null>(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  
   const locationRef = useRef<HTMLDivElement>(null);
+  const statsRef = useRef<HTMLDivElement>(null);
 
   const [searchFilters, setSearchFilters] = useState<VillaFilters>({
     location: '',
@@ -25,6 +32,50 @@ const HomePage: React.FC<HomePageProps> = ({ villas, onExplore, onViewDetails })
     checkIn: '',
     checkOut: ''
   });
+
+  // Parallax Effect
+  const handleMouseMove = (e: React.MouseEvent) => {
+    const { clientX, clientY } = e;
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
+    setMousePos({
+      x: (clientX - centerX) / 50,
+      y: (clientY - centerY) / 50
+    });
+  };
+
+  // Live Booking Simulations
+  useEffect(() => {
+    const names = ["Arjun", "Priya", "Vikram", "Sneha", "Kabir", "Anjali"];
+    const locations = ["Goa", "Lonavala", "Karjat", "Alibaug", "Nashik"];
+    
+    const interval = setInterval(() => {
+      const name = names[Math.floor(Math.random() * names.length)];
+      const loc = locations[Math.floor(Math.random() * locations.length)];
+      setLiveBooking({ name, location: loc });
+      setTimeout(() => setLiveBooking(null), 5000);
+    }, 15000);
+
+    // Show Festive Popup after delay
+    const popupTimer = setTimeout(() => {
+      const hasSeen = localStorage.getItem('republic_day_popup_seen');
+      if (!hasSeen) {
+        setShowFestivePopup(true);
+      }
+    }, 2000);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(popupTimer);
+    };
+  }, []);
+
+  const closeFestivePopup = () => {
+    setShowFestivePopup(false);
+    localStorage.setItem('republic_day_popup_seen', 'true');
+    setShowConfetti(true);
+    setTimeout(() => setShowConfetti(false), 4000);
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -44,21 +95,12 @@ const HomePage: React.FC<HomePageProps> = ({ villas, onExplore, onViewDetails })
     return HOTSPOT_LOCATIONS.filter(loc => loc.name.toLowerCase().includes(query));
   }, [searchFilters.location]);
 
-  const stayDuration = useMemo(() => {
-    if (searchFilters.checkIn && searchFilters.checkOut) {
-      const [y1, m1, d1] = searchFilters.checkIn.split('-').map(Number);
-      const [y2, m2, d2] = searchFilters.checkOut.split('-').map(Number);
-      const start = new Date(y1, m1 - 1, d1);
-      const end = new Date(y2, m2 - 1, d2);
-      const diff = end.getTime() - start.getTime();
-      const nights = Math.round(diff / (1000 * 60 * 60 * 24));
-      return nights > 0 ? nights : 0;
-    }
-    return 0;
-  }, [searchFilters.checkIn, searchFilters.checkOut]);
-
   const handleSearch = () => {
-    onExplore(searchFilters);
+    setShowConfetti(true);
+    setTimeout(() => {
+      setShowConfetti(false);
+      onExplore(searchFilters);
+    }, 1000);
   };
 
   const formatDateString = (dateStr: string | undefined) => {
@@ -82,48 +124,134 @@ const HomePage: React.FC<HomePageProps> = ({ villas, onExplore, onViewDetails })
   }, []);
 
   return (
-    <div className="space-y-24 pb-24 overflow-x-hidden">
-      <section className="relative h-[95vh] flex flex-col items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 z-0 scale-110 animate-pulse-slow">
+    <div className="space-y-24 pb-24 overflow-x-hidden relative bg-[#f0f9ff]" onMouseMove={handleMouseMove}>
+      
+      {/* Live Booking Notification */}
+      {liveBooking && (
+        <div className="fixed bottom-8 left-8 z-[1000] animate-popup">
+          <div className="bg-white/90 backdrop-blur-xl border border-sky-100 p-4 rounded-2xl shadow-2xl flex items-center gap-4">
+            <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600">
+              <i className="fa-solid fa-circle-check"></i>
+            </div>
+            <div>
+              <p className="text-xs font-black text-sky-900 leading-none">{liveBooking.name} from Delhi</p>
+              <p className="text-[10px] text-sky-400 font-bold uppercase tracking-widest mt-1">Just booked in {liveBooking.location}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Festive Republic Day Popup */}
+      {showFestivePopup && (
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-6 bg-sky-900/40 backdrop-blur-xl animate-fade">
+          <div className="max-w-md w-full bg-white rounded-[3.5rem] p-12 text-center relative shadow-[0_50px_100px_rgba(0,0,0,0.3)] animate-popup">
+            <button onClick={closeFestivePopup} className="absolute top-8 right-8 text-sky-200 hover:text-sky-900 transition-colors">
+              <i className="fa-solid fa-xmark text-2xl"></i>
+            </button>
+            
+            <div className="relative w-24 h-24 mx-auto mb-8">
+               <div className="absolute inset-0 bg-orange-100 rounded-full animate-ping opacity-20"></div>
+               <div className="w-full h-full bg-orange-500 rounded-full flex items-center justify-center text-white text-4xl shadow-xl">
+                 <i className="fa-solid fa-flag"></i>
+               </div>
+               <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-white rounded-full flex items-center justify-center border-2 border-orange-500 text-orange-600 animate-chakra">
+                 <i className="fa-solid fa-dharmachakra text-xl"></i>
+               </div>
+            </div>
+
+            <h2 className="text-3xl font-bold font-serif text-sky-900 mb-4">Jai Hind!</h2>
+            <p className="text-sky-600 font-medium mb-8 leading-relaxed">Celebrate the spirit of the Republic with an exclusive 26% discount on our entire collection.</p>
+            
+            <div className="bg-orange-50 p-6 rounded-3xl border border-orange-100 mb-8">
+               <span className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-400 block mb-2">Republic Day Special</span>
+               <p className="text-3xl font-black text-orange-500 font-serif">FLAT 26% OFF</p>
+            </div>
+
+            <button onClick={closeFestivePopup} className="w-full republic-btn py-5 rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all">
+              Claim Offer & Browse
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Tri-color Confetti Overlay */}
+      {showConfetti && (
+        <div className="fixed inset-0 pointer-events-none z-[2000] overflow-hidden">
+          {[...Array(60)].map((_, i) => (
+            <div 
+              key={i} 
+              className="absolute w-2 h-4"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `-20px`,
+                animation: `confetti-fall ${2 + Math.random() * 3}s linear forwards`,
+                backgroundColor: i % 3 === 0 ? '#FF9933' : (i % 3 === 1 ? '#ffffff' : '#128807'),
+                transform: `rotate(${Math.random() * 360}deg)`,
+                animationDelay: `${Math.random() * 2}s`
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      <section className="relative h-[100vh] flex flex-col items-center justify-center overflow-hidden">
+        {/* Parallax Background */}
+        <div 
+          className="absolute inset-0 z-0 transition-transform duration-700 ease-out pointer-events-none"
+          style={{ transform: `translate(${mousePos.x}px, ${mousePos.y}px) scale(1.1)` }}
+        >
           <img 
             src="https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80&w=1920" 
             alt="Hero background" 
-            className="w-full h-full object-cover brightness-[0.35]"
+            className="w-full h-full object-cover opacity-10"
           />
+          <div className="absolute inset-0 bg-gradient-to-b from-orange-100/20 via-sky-50/50 to-green-100/20"></div>
         </div>
-        
-        <div className="relative z-10 text-center text-white px-4 max-w-5xl mb-12">
-          <h1 className="text-6xl md:text-9xl font-bold font-serif mb-6 drop-shadow-2xl animate-reveal uppercase tracking-tighter stagger-1">
-            {BRAND_NAME}
+
+        <div 
+          className="relative z-10 text-center px-4 max-w-5xl mb-12 transition-transform duration-500 ease-out"
+          style={{ transform: `translate(${-mousePos.x * 0.5}px, ${-mousePos.y * 0.5}px)` }}
+        >
+          <div className="mb-8 flex items-center justify-center gap-4 animate-reveal">
+             <div className="h-[1px] w-12 bg-orange-500/50"></div>
+             <span className="text-[11px] font-black uppercase tracking-[0.5em] text-orange-500">{settings.promoText}</span>
+             <div className="h-[1px] w-12 bg-green-500/50"></div>
+          </div>
+          <h1 className="text-7xl md:text-[10rem] font-bold font-serif mb-8 drop-shadow-[0_20px_50px_rgba(255,153,51,0.1)] animate-reveal uppercase tracking-tighter text-theme-shimmer leading-none">
+            {BRAND_NAME.split(' ')[0]} <br/> <span className="text-4xl md:text-6xl tracking-[0.2em] font-light italic">Sanctuary</span>
           </h1>
-          <p className="text-lg md:text-2xl mb-12 text-slate-200 max-w-2xl mx-auto font-light leading-relaxed animate-reveal stagger-2">
-            Hand-picked luxury villas for your ultimate sanctuary. Managed with perfection, designed for you.
+          <p className="text-xl md:text-3xl mb-16 text-sky-900 max-w-3xl mx-auto font-light leading-relaxed animate-reveal stagger-2">
+            A tribute to the Republic. Discover a legacy of hospitality across India's most breathtaking retreats.
           </p>
         </div>
 
-        <div className="relative z-20 w-full max-w-6xl px-4 animate-scale stagger-3">
-          <div className="bg-white/95 backdrop-blur-3xl p-3 rounded-[2.5rem] md:rounded-full shadow-[0_40px_100px_rgba(0,0,0,0.3)] flex flex-col md:flex-row items-center gap-2 border border-white/40">
+        {/* Floating Search Hub */}
+        <div className="relative z-20 w-full max-w-6xl px-4 animate-scale stagger-3 float-animation">
+          <div className="bg-white/80 backdrop-blur-3xl p-4 rounded-[3.5rem] shadow-[0_50px_100px_rgba(30,58,138,0.12)] flex flex-col md:flex-row items-center gap-4 border border-white">
             
             <div 
-              className="flex-[1.2] w-full px-8 py-4 border-b md:border-b-0 md:border-r border-gray-100 hover:bg-gray-100/50 transition-colors rounded-t-3xl md:rounded-none relative"
+              className="flex-[1.2] w-full px-10 py-5 border-b md:border-b-0 md:border-r border-sky-100 hover:bg-sky-50/50 transition-colors rounded-[2.5rem] md:rounded-none relative group"
               ref={locationRef}
             >
-              <label className="block text-[9px] font-black text-amber-600 uppercase tracking-widest mb-1">Destination</label>
-              <input 
-                type="text"
-                placeholder="Where to go?"
-                className="w-full bg-transparent outline-none text-sm font-bold text-slate-900 placeholder:text-slate-300"
-                value={searchFilters.location}
-                onFocus={() => {
-                  setShowLocationSuggestions(true);
-                  setShowPicker(false);
-                }}
-                onChange={(e) => setSearchFilters({...searchFilters, location: e.target.value})}
-              />
+              <label className="block text-[10px] font-black text-orange-500 uppercase tracking-widest mb-2 group-hover:translate-x-1 transition-transform">Destination</label>
+              <div className="flex items-center gap-3">
+                 <i className="fa-solid fa-location-dot text-sky-200 group-hover:text-orange-500 transition-colors"></i>
+                 <input 
+                  type="text"
+                  placeholder="Where to?"
+                  className="w-full bg-transparent outline-none text-base font-bold text-sky-900 placeholder:text-sky-200"
+                  value={searchFilters.location}
+                  onFocus={() => {
+                    setShowLocationSuggestions(true);
+                    setShowPicker(false);
+                  }}
+                  onChange={(e) => setSearchFilters({...searchFilters, location: e.target.value})}
+                />
+              </div>
               
               {showLocationSuggestions && (
-                <div className="absolute top-full left-0 mt-6 w-full md:w-80 bg-white rounded-[2.5rem] shadow-[0_30px_80px_rgba(0,0,0,0.2)] border border-gray-100 p-8 z-[110] animate-scale">
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Popular Hotspots</p>
+                <div className="absolute top-full left-0 mt-8 w-full md:w-96 bg-white/95 backdrop-blur-2xl rounded-[3rem] shadow-[0_30px_80px_rgba(30,58,138,0.15)] border border-sky-100 p-8 z-[110] animate-scale">
+                  <p className="text-[10px] font-black text-sky-300 uppercase tracking-[0.3em] mb-6">Republic Hotspots</p>
                   <div className="space-y-2">
                     {filteredLocations.map((loc) => (
                       <button
@@ -132,13 +260,13 @@ const HomePage: React.FC<HomePageProps> = ({ villas, onExplore, onViewDetails })
                           setSearchFilters({...searchFilters, location: loc.name});
                           setShowLocationSuggestions(false);
                         }}
-                        className="w-full text-left px-4 py-3 rounded-2xl hover:bg-amber-50 group flex items-center justify-between transition-all"
+                        className="w-full text-left px-5 py-4 rounded-2xl hover:bg-sky-50 group flex items-center justify-between transition-all"
                       >
-                        <div className="flex items-center gap-3">
-                          <i className="fa-solid fa-location-dot text-amber-500/30 group-hover:text-amber-500"></i>
-                          <span className="text-sm font-bold text-slate-700 group-hover:text-slate-900">{loc.name}</span>
+                        <div className="flex items-center gap-4">
+                          <img src={loc.image} className="w-10 h-10 rounded-xl object-cover grayscale group-hover:grayscale-0 transition-all" alt="" />
+                          <span className="text-sm font-bold text-sky-700 group-hover:text-sky-900">{loc.name}</span>
                         </div>
-                        <i className="fa-solid fa-arrow-right text-[10px] text-amber-500 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all"></i>
+                        <span className="text-[10px] font-black text-sky-200 group-hover:text-orange-500 transition-colors">{loc.count} Stays</span>
                       </button>
                     ))}
                   </div>
@@ -147,70 +275,66 @@ const HomePage: React.FC<HomePageProps> = ({ villas, onExplore, onViewDetails })
             </div>
             
             <div 
-              className={`flex-[1.8] w-full px-8 py-4 border-b md:border-b-0 md:border-r border-gray-100 relative group transition-all cursor-pointer ${showPicker ? 'bg-amber-50' : 'hover:bg-gray-100/50'}`}
+              className={`flex-[1.8] w-full px-10 py-5 border-b md:border-b-0 md:border-r border-sky-100 relative group transition-all cursor-pointer rounded-[2.5rem] md:rounded-none ${showPicker ? 'bg-sky-50' : 'hover:bg-sky-50/50'}`}
               onClick={() => {
                 setShowPicker(true);
                 setShowLocationSuggestions(false);
               }}
             >
-              <div className="flex justify-between items-center mb-1">
-                <label className="block text-[9px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-2">
-                  <i className="fa-solid fa-calendar-days text-[10px]"></i>
-                  Stay Duration
-                </label>
-                {stayDuration > 0 && <span className="bg-amber-500 text-white px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest">{stayDuration} Nights</span>}
-              </div>
-              <div className="flex items-center gap-4">
-                <div className={`text-sm font-bold ${searchFilters.checkIn ? 'text-slate-900' : 'text-slate-300'}`}>
-                  {formatDateString(searchFilters.checkIn) || 'Check-in'}
-                </div>
-                <i className="fa-solid fa-arrow-right-long text-amber-400 text-[10px]"></i>
-                <div className={`text-sm font-bold ${searchFilters.checkOut ? 'text-slate-900' : 'text-slate-300'}`}>
-                  {formatDateString(searchFilters.checkOut) || 'Check-out'}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex-1 w-full px-8 py-4 border-b md:border-b-0 md:border-r border-gray-100 hover:bg-gray-100/50 transition-colors">
-              <label className="block text-[9px] font-black text-amber-600 uppercase tracking-widest mb-1 flex justify-between">
-                Max Budget <span className="text-slate-900 font-black">₹{(searchFilters.maxPrice/1000).toFixed(0)}k</span>
+              <label className="block text-[10px] font-black text-green-600 uppercase tracking-widest mb-2 flex items-center gap-2 group-hover:translate-x-1 transition-transform">
+                <i className="fa-solid fa-calendar-days text-[11px]"></i>
+                Booking Windows
               </label>
-              <input 
-                type="range"
-                min="5000"
-                max="200000"
-                step="5000"
-                className="w-full h-1.5 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-amber-500 mt-3"
-                value={searchFilters.maxPrice}
-                onChange={(e) => setSearchFilters({...searchFilters, maxPrice: Number(e.target.value)})}
-              />
+              <div className="flex items-center gap-6">
+                <div className={`text-base font-bold ${searchFilters.checkIn ? 'text-sky-900' : 'text-sky-300'}`}>
+                  {formatDateString(searchFilters.checkIn) || 'Arrival'}
+                </div>
+                <div className="w-8 h-[1px] bg-orange-200"></div>
+                <div className={`text-base font-bold ${searchFilters.checkOut ? 'text-sky-900' : 'text-sky-300'}`}>
+                  {formatDateString(searchFilters.checkOut) || 'Departure'}
+                </div>
+              </div>
             </div>
 
-            <div className="p-3 w-full md:w-auto">
+            <div className="p-2 w-full md:w-auto">
               <button 
                 onClick={handleSearch}
-                className="bg-slate-900 text-white px-12 py-5 rounded-[2rem] md:rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all flex items-center gap-3 w-full justify-center group shadow-2xl active:scale-95"
+                className="republic-btn px-16 py-6 rounded-[2.5rem] font-black text-[11px] uppercase tracking-[0.2em] transition-all flex items-center gap-4 w-full justify-center group shadow-2xl active:scale-95 border-none"
               >
-                <i className="fa-solid fa-search group-hover:scale-110 transition-transform"></i>
-                Find Sanctuary
+                Explore Sanctum
+                <i className="fa-solid fa-arrow-right-long group-hover:translate-x-2 transition-transform"></i>
               </button>
             </div>
           </div>
         </div>
       </section>
 
+      {/* Interactive Stats Counter */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10" ref={statsRef}>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-16">
+          {[
+            { label: "Elite Sanctums", value: "500+", icon: "fa-hotel", color: "text-orange-500" },
+            { label: "Indian Cities", value: "24+", icon: "fa-map-location-dot", color: "text-sky-600" },
+            { label: "Satisfied Guests", value: "12k", icon: "fa-users-viewfinder", color: "text-green-600" },
+            { label: "Expert Concierge", value: "100%", icon: "fa-user-tie", color: "text-sky-900" }
+          ].map((stat, i) => (
+            <div key={i} className="group bg-white p-8 rounded-[3rem] border border-sky-100 hover:shadow-2xl transition-all duration-700 text-center animate-reveal" style={{ animationDelay: `${i * 100}ms` }}>
+              <div className={`w-14 h-14 mx-auto mb-6 rounded-2xl bg-sky-50 flex items-center justify-center text-xl ${stat.color} group-hover:scale-110 transition-transform`}>
+                 <i className={`fa-solid ${stat.icon}`}></i>
+              </div>
+              <p className="text-4xl font-bold font-serif text-sky-900 mb-2">{stat.value}</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-sky-300">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {showPicker && (
         <div 
-          className="fixed inset-0 z-[500] flex items-center justify-center p-4 md:p-6 bg-slate-900/70 backdrop-blur-md animate-fade overflow-y-auto"
+          className="fixed inset-0 z-[500] flex items-center justify-center p-4 md:p-6 bg-sky-900/10 backdrop-blur-md animate-fade overflow-y-auto"
           onClick={() => setShowPicker(false)}
         >
           <div className="relative w-full max-w-4xl my-auto" onClick={e => e.stopPropagation()}>
-            <button 
-              onClick={() => setShowPicker(false)}
-              className="absolute -top-14 right-0 w-12 h-12 bg-white/10 hover:bg-white/20 rounded-full text-white flex items-center justify-center transition-all group z-[510]"
-            >
-              <i className="fa-solid fa-xmark text-xl group-hover:rotate-90 transition-transform"></i>
-            </button>
             <DateRangePicker 
               startDate={searchFilters.checkIn || ''} 
               endDate={searchFilters.checkOut || ''} 
@@ -221,95 +345,29 @@ const HomePage: React.FC<HomePageProps> = ({ villas, onExplore, onViewDetails })
         </div>
       )}
 
-      {/* Featured Hotspots */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-12 text-center md:text-left">
-          <span className="text-amber-600 font-black uppercase tracking-[0.4em] text-[9px] mb-4 block">Destination Hubs</span>
-          <h2 className="text-4xl md:text-5xl font-bold font-serif text-slate-900">Explore Hotspots</h2>
-        </div>
-        <div className="flex overflow-x-auto gap-8 pb-10 no-scrollbar scroll-smooth snap-x">
-          {HOTSPOT_LOCATIONS.map((loc, idx) => (
-            <div 
-              key={loc.name}
-              onClick={() => onExplore({ ...searchFilters, location: loc.name })}
-              className="flex-shrink-0 w-72 md:w-80 h-96 md:h-[28rem] rounded-[3rem] overflow-hidden relative group cursor-pointer snap-start animate-reveal"
-              style={{ animationDelay: `${idx * 100}ms` }}
-            >
-              <img src={loc.image} alt={loc.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[2s]" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent group-hover:from-amber-900/60 transition-all duration-700"></div>
-              <div className="absolute bottom-10 left-10 translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                <h3 className="text-3xl font-bold text-white font-serif mb-2">{loc.name}</h3>
-                <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest opacity-80 group-hover:opacity-100 transition-opacity">{loc.count} Boutique Stays</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Trending Villas */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-4">
-          <div>
-            <span className="text-amber-600 font-black uppercase tracking-[0.4em] text-[9px] mb-4 block">Recommended Selection</span>
-            <h2 className="text-4xl md:text-5xl font-bold font-serif text-slate-900 mb-4">Trending Villas</h2>
-            <p className="text-slate-500 text-lg font-light">Curated collections of our most desired retreats this season.</p>
+      {/* Featured Collection */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12">
+        <div className="mb-16 flex flex-col md:flex-row justify-between items-end gap-6">
+          <div className="max-w-xl">
+            <span className="text-orange-600 font-black uppercase tracking-[0.5em] text-[10px] mb-4 block">Hand-Picked Legacy</span>
+            <h2 className="text-5xl md:text-7xl font-bold font-serif text-sky-900 leading-tight">Patriotic Premier Stays</h2>
           </div>
-          <button 
-            onClick={() => onExplore()}
-            className="flex items-center gap-3 text-slate-900 font-black text-[10px] uppercase tracking-widest hover:text-amber-600 group px-8 py-4 rounded-2xl hover:bg-amber-50 transition-all border border-gray-100"
-          >
-            Full Catalog <i className="fa-solid fa-arrow-right group-hover:translate-x-2 transition-transform"></i>
+          <button onClick={() => onExplore()} className="group flex items-center gap-4 text-[11px] font-black uppercase tracking-widest text-green-600 hover:text-orange-500 transition-all border border-green-100 hover:border-orange-100 px-10 py-5 rounded-2xl bg-white shadow-sm hover:shadow-xl">
+            Explore All Collection <i className="fa-solid fa-chevron-right group-hover:translate-x-1 transition-transform"></i>
           </button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
-          {featuredVillas.map((villa, idx) => (
-            <div 
-              key={villa.id} 
-              className="animate-reveal" 
-              style={{ animationDelay: `${idx * 150}ms` }}
-            >
-              <VillaCard villa={villa} onViewDetails={onViewDetails} />
-            </div>
+          {featuredVillas.map(v => (
+            <VillaCard key={v.id} villa={v} onViewDetails={onViewDetails} />
           ))}
-        </div>
-      </section>
-
-      {/* Services Section */}
-      <section className="bg-slate-900 py-32 text-white relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-[40rem] h-[40rem] bg-amber-500/5 rounded-full -mr-40 -mt-40 blur-3xl"></div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
-            <div className="animate-reveal">
-              <h2 className="text-5xl md:text-7xl font-bold font-serif mb-10 leading-tight">Beyond Just <br/><span className="text-amber-500 italic">Lodging</span></h2>
-              <p className="text-slate-400 text-xl leading-relaxed mb-12 max-w-xl font-light">
-                {BRAND_NAME} is your comprehensive lifestyle partner. From personal chefs to custom event planning, our dedicated on-ground concierge ensures every request is fulfilled.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-              {SERVICES.map((service, idx) => (
-                <div 
-                  key={service.id} 
-                  className="bg-white/5 backdrop-blur-xl p-10 rounded-[3rem] border border-white/10 hover:border-amber-500/50 transition-all group animate-reveal shadow-lg hover:shadow-amber-500/10"
-                  style={{ animationDelay: `${idx * 100}ms` }}
-                >
-                  <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mb-10 group-hover:bg-amber-500 transition-all duration-500">
-                    <i className={`fa-solid ${service.icon} text-3xl text-amber-500 group-hover:text-white`}></i>
-                  </div>
-                  <h3 className="text-2xl font-bold mb-4 font-serif">{service.title}</h3>
-                  <p className="text-sm text-slate-400 leading-relaxed font-light">{service.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       </section>
 
       <style>{`
-        @keyframes pulseSlow {
-          0%, 100% { transform: scale(1.02); }
-          50% { transform: scale(1.05); }
+        @keyframes confetti-fall {
+          0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+          100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
         }
-        .animate-pulse-slow { animation: pulseSlow 25s ease-in-out infinite; }
       `}</style>
     </div>
   );

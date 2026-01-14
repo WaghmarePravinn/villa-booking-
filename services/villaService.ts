@@ -1,72 +1,190 @@
 
-import { 
-  collection, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  doc, 
-  onSnapshot,
-  query, 
-  orderBy,
-  writeBatch,
-  getDocs
-} from "firebase/firestore";
-import { db } from "./firebase";
+import { supabase, isSupabaseAvailable } from "./supabase";
 import { Villa } from "../types";
 import { INITIAL_VILLAS } from "../constants";
+import { handleDbError } from "./errorUtils";
 
-const VILLAS_COLLECTION = "villas";
+const TABLE = "villas";
+const LOCAL_STORAGE_KEY = "peak_stay_villas_sandbox";
 
-/**
- * Sets up a real-time listener for the villas collection.
- * This is the "Always Syncing" core.
- */
-export const subscribeToVillas = (callback: (villas: Villa[]) => void) => {
-  const q = query(collection(db, VILLAS_COLLECTION), orderBy("name"));
-  
-  return onSnapshot(q, (snapshot) => {
-    const villas: Villa[] = [];
-    snapshot.forEach((doc) => {
-      villas.push({ id: doc.id, ...doc.data() } as Villa);
-    });
-    
-    // If database is empty, we don't auto-seed here to avoid loops, 
-    // but the app will show the 'Seed' button in Admin.
-    callback(villas);
-  }, (error) => {
-    console.error("Firestore sync error:", error);
+// Helper to generate a UUID-like string for local storage
+const generateUUID = () => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
   });
 };
 
+// Check if a string is a valid UUID
+const isValidUUID = (id: string) => {
+  const regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return regex.test(id);
+};
+
+const getLocalVillas = (): Villa[] => {
+  const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+  if (!saved) return INITIAL_VILLAS;
+  
+  try {
+    const parsed = JSON.parse(saved);
+    return parsed.map((v: any) => ({
+      ...v,
+      id: isValidUUID(v.id) ? v.id : generateUUID()
+    }));
+  } catch (e) {
+    return INITIAL_VILLAS;
+  }
+};
+
+const saveLocalVillas = (villas: Villa[]) => {
+  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(villas));
+};
+
+const mapFromDb = (v: any): Villa => ({
+  id: v.id,
+  name: v.name || "Unnamed Property",
+  location: v.location || "Unknown Location",
+  pricePerNight: Number(v.price_per_night ?? v.pricePerNight ?? 0),
+  bedrooms: Number(v.bedrooms ?? 0),
+  bathrooms: Number(v.bathrooms ?? 0),
+  capacity: Number(v.capacity ?? 0),
+  description: v.description || "",
+  longDescription: v.long_description || v.longDescription || "",
+  imageUrls: Array.isArray(v.image_urls) ? v.image_urls : (v.image_url ? [v.image_url] : []),
+  videoUrls: Array.isArray(v.video_urls) ? v.video_urls : (v.video_url ? [v.video_url] : []),
+  amenities: Array.isArray(v.amenities) ? v.amenities : [],
+  includedServices: Array.isArray(v.included_services) ? v.included_services : [],
+  isFeatured: Boolean(v.is_featured ?? v.isFeatured ?? false),
+  rating: Number(v.rating ?? 5),
+  ratingCount: Number(v.rating_count ?? v.ratingCount ?? 0),
+  numRooms: Number(v.num_rooms ?? v.numRooms ?? v.bedrooms ?? 0),
+  mealsAvailable: Boolean(v.meals_available ?? v.mealsAvailable ?? false),
+  petFriendly: Boolean(v.pet_friendly ?? v.petFriendly ?? false),
+  refundPolicy: v.refund_policy || v.refundPolicy || ""
+});
+
+const mapToDb = (v: Partial<Villa>) => {
+  const payload: any = {};
+  if (v.name !== undefined) payload.name = v.name;
+  if (v.location !== undefined) payload.location = v.location;
+  if (v.pricePerNight !== undefined) payload.price_per_night = Number(v.pricePerNight);
+  if (v.bedrooms !== undefined) payload.bedrooms = Number(v.bedrooms);
+  if (v.bathrooms !== undefined) payload.bathrooms = Number(v.bathrooms);
+  if (v.capacity !== undefined) payload.capacity = Number(v.capacity);
+  if (v.description !== undefined) payload.description = v.description;
+  if (v.longDescription !== undefined) payload.long_description = v.longDescription;
+  if (v.imageUrls !== undefined) payload.image_urls = v.imageUrls;
+  if (v.videoUrls !== undefined) payload.video_urls = v.videoUrls;
+  if (v.amenities !== undefined) payload.amenities = v.amenities;
+  if (v.includedServices !== undefined) payload.included_services = v.includedServices;
+  if (v.isFeatured !== undefined) payload.is_featured = Boolean(v.isFeatured);
+  if (v.numRooms !== undefined) payload.num_rooms = Number(v.numRooms);
+  if (v.mealsAvailable !== undefined) payload.meals_available = Boolean(v.mealsAvailable);
+  // Fixed typo: using v.petFriendly instead of v.pet_friendly which doesn't exist on Partial<Villa>
+  if (v.petFriendly !== undefined) payload.pet_friendly = Boolean(v.petFriendly);
+  if (v.refundPolicy !== undefined) payload.refund_policy = v.refundPolicy;
+  if (v.rating !== undefined) payload.rating = Number(v.rating);
+  if (v.ratingCount !== undefined) payload.rating_count = Number(v.rating_count);
+  return payload;
+};
+
+export const subscribeToVillas = (callback: (villas: Villa[]) => void) => {
+  if (!isSupabaseAvailable) {
+    callback(getLocalVillas());
+    const handleStorage = () => callback(getLocalVillas());
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }
+
+  const fetchVillas = async () => {
+    try {
+      // Trying with created_at order, if it fails, falls back to unordered
+      const { data, error } = await supabase.from(TABLE).select('*').order('created_at', { ascending: false });
+      if (!error && data) {
+        callback(data.map(mapFromDb));
+      } else if (error) {
+        // Fallback for cases where created_at doesn't exist yet
+        const { data: fallbackData } = await supabase.from(TABLE).select('*');
+        if (fallbackData) callback(fallbackData.map(mapFromDb));
+      }
+    } catch (e: any) {
+      console.error("Critical Fetch Failure:", e.message || e);
+    }
+  };
+
+  fetchVillas();
+  const channel = supabase.channel('catalog-realtime')
+    .on('postgres_changes', { event: '*', schema: 'public', table: TABLE }, (payload) => {
+      fetchVillas();
+    })
+    .subscribe();
+    
+  return () => { supabase.removeChannel(channel); };
+};
+
 export const createVilla = async (villa: Omit<Villa, 'id'>): Promise<string> => {
-  const docRef = await addDoc(collection(db, VILLAS_COLLECTION), villa);
-  return docRef.id;
+  if (!isSupabaseAvailable) {
+    const villas = getLocalVillas();
+    const newVilla = { ...villa, id: generateUUID() } as Villa;
+    saveLocalVillas([newVilla, ...villas]);
+    window.dispatchEvent(new Event('storage'));
+    return newVilla.id;
+  }
+  const payload = mapToDb(villa);
+  const { data, error } = await supabase.from(TABLE).insert([payload]).select();
+  if (error) throw handleDbError(error, TABLE);
+  if (!data || data.length === 0) throw new Error("Insert failed: No data returned from Supabase.");
+  return data[0].id;
 };
 
 export const updateVillaById = async (id: string, villa: Partial<Villa>): Promise<void> => {
-  const villaRef = doc(db, VILLAS_COLLECTION, id);
-  const { id: _, ...payload } = villa as any;
-  await updateDoc(villaRef, payload);
+  if (!isSupabaseAvailable) {
+    const villas = getLocalVillas();
+    const index = villas.findIndex(v => v.id === id);
+    if (index !== -1) {
+      villas[index] = { ...villas[index], ...villa };
+      saveLocalVillas(villas);
+      window.dispatchEvent(new Event('storage'));
+    }
+    return;
+  }
+  
+  if (!isValidUUID(id)) {
+    throw new Error(`The ID "${id}" is not a valid UUID.`);
+  }
+
+  const payload = mapToDb(villa);
+  const { error } = await supabase.from(TABLE).update(payload).eq('id', id);
+  if (error) throw handleDbError(error, TABLE);
 };
 
 export const deleteVillaById = async (id: string): Promise<void> => {
-  await deleteDoc(doc(db, VILLAS_COLLECTION, id));
+  const localVillas = getLocalVillas();
+  saveLocalVillas(localVillas.filter(v => v.id !== id));
+  window.dispatchEvent(new Event('storage'));
+
+  if (!isSupabaseAvailable) return;
+
+  if (!isValidUUID(id)) return;
+
+  const { error } = await supabase.from(TABLE).delete().eq('id', id);
+  if (error) throw handleDbError(error, TABLE);
 };
 
-export const seedDatabase = async (): Promise<void> => {
-  try {
-    const querySnapshot = await getDocs(collection(db, VILLAS_COLLECTION));
-    const batch = writeBatch(db);
-    querySnapshot.forEach((document) => {
-      batch.delete(doc(db, VILLAS_COLLECTION, document.id));
-    });
-    await batch.commit();
-
-    for (const villa of INITIAL_VILLAS) {
-      const { id, ...data } = villa;
-      await addDoc(collection(db, VILLAS_COLLECTION), data);
-    }
-  } catch (error: any) {
-    console.error("Firestore seeding failed:", error.message);
+export const uploadMedia = async (file: File, folder: 'images' | 'videos', onProgress?: (percent: number) => void): Promise<string> => {
+  if (!isSupabaseAvailable) {
+    if (onProgress) onProgress(100);
+    return URL.createObjectURL(file);
   }
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${generateUUID()}.${fileExt}`;
+  const filePath = `${folder}/${fileName}`;
+  
+  const { error } = await supabase.storage.from('villa-media').upload(filePath, file);
+  if (error) throw handleDbError(error, 'storage');
+  
+  if (onProgress) onProgress(100);
+  const { data: { publicUrl } } = supabase.storage.from('villa-media').getPublicUrl(filePath);
+  return publicUrl;
 };

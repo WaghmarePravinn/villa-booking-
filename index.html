@@ -4,99 +4,121 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Peak Stay Destination | Premium Villa Collection</title>
+    <title>Peak Stay | Republic Day Luxury Collection</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-            --ease-in-out-cubic: cubic-bezier(0.65, 0, 0.35, 1);
+            --theme-primary: #FF9933; /* Saffron */
+            --theme-primary-rgb: 255, 153, 51;
+            --theme-secondary: #bae6fd; /* Light Sky Blue */
+            --theme-accent: #128807; /* Indian Green */
+            --theme-text: #1e3a8a; /* Navy Blue (Chakra) */
+            --theme-bg: #f0f9ff; /* Very Light Sky Blue */
+            --theme-marquee-bg: #FF9933;
+            --theme-marquee-text: #ffffff;
+        }
+
+        .theme-republic-day {
+            --theme-primary: #FF9933;
+            --theme-secondary: #f0f9ff;
+            --theme-accent: #128807;
+            --theme-text: #1e3a8a;
+            --theme-bg: #f0f9ff;
         }
 
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
             -webkit-font-smoothing: antialiased;
-            background-color: #fcfcfd;
+            background-color: var(--theme-bg);
+            color: var(--theme-text);
+            transition: all 0.5s var(--ease-out-expo);
+            overflow-x: hidden;
         }
 
         h1, h2, h3, .font-serif {
             font-family: 'Playfair Display', serif;
         }
 
-        /* Motion System */
-        @keyframes revealUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
+        .text-theme-shimmer {
+            background: linear-gradient(to right, #FF9933, #0c4a6e, #128807, #FF9933);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-size: 200% auto;
+            animation: shimmer 4s linear infinite;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+        @keyframes shimmer {
+            to { background-position: 200% center; }
         }
 
-        @keyframes scaleIn {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
+        @keyframes popup-bounce {
+            0% { transform: scale(0.5) translateY(100px); opacity: 0; }
+            50% { transform: scale(1.05) translateY(-10px); opacity: 1; }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
         }
 
-        .animate-reveal {
-            animation: revealUp 1.2s var(--ease-out-expo) forwards;
+        @keyframes chakra-spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
 
-        .animate-fade {
-            animation: fadeIn 0.8s ease-out forwards;
-        }
-
-        .animate-scale {
-            animation: scaleIn 0.8s var(--ease-out-expo) forwards;
-        }
-
-        .stagger-1 { animation-delay: 0.1s; opacity: 0; }
-        .stagger-2 { animation-delay: 0.2s; opacity: 0; }
-        .stagger-3 { animation-delay: 0.3s; opacity: 0; }
-        .stagger-4 { animation-delay: 0.4s; opacity: 0; }
-
+        .animate-popup { animation: popup-bounce 0.8s var(--ease-out-expo) forwards; }
+        .animate-chakra { animation: chakra-spin 10s linear infinite; }
+        
         .glass-panel {
-            background: rgba(255, 255, 255, 0.7);
+            background: rgba(240, 249, 255, 0.8);
             backdrop-filter: blur(20px) saturate(180%);
             -webkit-backdrop-filter: blur(20px) saturate(180%);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.5);
         }
 
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
+        .republic-btn {
+            background: linear-gradient(135deg, #FF9933 0%, #ffffff 50%, #128807 100%);
+            background-size: 200% 200%;
+            transition: all 0.5s ease;
+            color: #1e3a8a;
+            font-weight: 900;
+            border: 1px solid rgba(30, 58, 138, 0.1);
         }
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
+        .republic-btn:hover {
+            background-position: 100% 100%;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 153, 51, 0.3);
         }
 
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f0f9ff; }
+        ::-webkit-scrollbar-thumb { background: #FF9933; border-radius: 10px; }
+
+        /* Floating Animation */
+        .float-animation {
+            animation: floating 3s ease-in-out infinite;
+        }
+
+        @keyframes floating {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
     </style>
 <script type="importmap">
 {
   "imports": {
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/",
     "react": "https://esm.sh/react@^19.2.3",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react-dom": "https://esm.sh/react-dom@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
     "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
-    "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
-    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js",
-    "firebase/": "https://esm.sh/firebase@^12.7.0/"
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.45.0",
+    "jszip": "https://esm.sh/jszip@3.10.1"
   }
 }
 </script>
 </head>
-<body class="text-slate-900 selection:bg-amber-100 selection:text-amber-900">
+<body class="theme-republic-day">
     <div id="root"></div>
 </body>
 </html>
