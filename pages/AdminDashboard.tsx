@@ -31,6 +31,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
   const [activeTab, setActiveTab] = useState<AdminTab>('inventory');
   const [isEditing, setIsEditing] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [isSyncingBroadcast, setIsSyncingBroadcast] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [magicPrompt, setMagicPrompt] = useState('');
@@ -164,6 +165,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
       refundPolicy: 'Full refund if cancelled 48 hours before check-in.'
     });
     setIsEditing(false);
+    setIsUploading(false);
     setMagicPrompt('');
     if (imageInputRef.current) imageInputRef.current.value = '';
     replaceIndexRef.current = null;
@@ -171,7 +173,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.location) return;
+    if (!formData.name || !formData.location || isUploading) return;
     
     setIsSyncing(true);
     setProgress({ active: true, message: 'Syncing Changes...', percentage: 50, error: null });
@@ -228,15 +230,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
     const isReplacing = replaceIndexRef.current !== null;
     const currentUrls = [...(formData.imageUrls || [])];
 
-    // Optimistically show a placeholder if replacing
+    // Optimistically show a temporary blob while uploading
     if (isReplacing) {
       currentUrls[replaceIndexRef.current!] = URL.createObjectURL(files[0]);
       setFormData(prev => ({ ...prev, imageUrls: currentUrls }));
     }
 
+    setIsUploading(true);
     setProgress({ 
       active: true, 
-      message: isReplacing ? 'Replacing asset...' : `Preparing ${files.length} assets...`, 
+      message: isReplacing ? 'Replacing asset...' : `Syncing ${files.length} assets...`, 
       percentage: 0, 
       error: null 
     });
@@ -255,7 +258,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
             setProgress(prev => ({
               ...prev,
               percentage: percent,
-              subMessage: `Committing asset ${i + 1}/${files.length}: ${percent}%`
+              subMessage: `Syncing asset ${i + 1}/${files.length}: ${percent}%`
             }));
           });
           currentUrls.push(url);
@@ -263,17 +266,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
       }
       
       setFormData(prev => ({ ...prev, imageUrls: currentUrls }));
-      setProgress({ active: true, message: 'Assets Buffered', percentage: 100, subMessage: 'Images are ready for live reflection.' });
-      setTimeout(() => setProgress(prev => ({ ...prev, active: false })), 2500);
+      setProgress({ active: true, message: 'Assets Synced', percentage: 100, subMessage: 'Images are ready for cloud commit.' });
+      setTimeout(() => setProgress(prev => ({ ...prev, active: false })), 2000);
     } catch (err: any) {
       setProgress({ 
         active: true, 
-        message: 'Upload Interrupted', 
+        message: 'Sync Interrupted', 
         percentage: 0, 
         error: err.message,
-        subMessage: 'Storage Bucket might be missing or private.' 
+        subMessage: 'Ensure villa-media bucket is public.' 
       });
     } finally {
+      setIsUploading(false);
       if (imageInputRef.current) imageInputRef.current.value = '';
       replaceIndexRef.current = null;
     }
@@ -491,29 +495,35 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                         
                         {/* Status Overlay */}
                         <div className="absolute top-2 left-2 flex gap-1">
-                           <div className={`px-2 py-0.5 rounded-lg text-[7px] font-black uppercase tracking-widest shadow-sm ${url.startsWith('blob:') ? 'bg-amber-500 text-white animate-pulse' : 'bg-emerald-500 text-white'}`}>
-                              {url.startsWith('blob:') ? 'Syncing...' : 'Cloud'}
+                           <div className={`px-2 py-0.5 rounded-lg text-[7px] font-black uppercase tracking-widest shadow-sm ${url.startsWith('blob:') ? 'bg-amber-500 text-white animate-pulse' : (url.startsWith('data:') ? 'bg-blue-500 text-white' : 'bg-emerald-500 text-white')}`}>
+                              {url.startsWith('blob:') ? 'Syncing...' : (url.startsWith('data:') ? 'Sandbox' : 'Cloud')}
                            </div>
                         </div>
 
                         {/* Action Overlay */}
-                        <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-[1.5rem] flex items-center justify-center gap-2">
-                           <button 
-                              type="button" 
-                              onClick={() => handleImagePicker(i)}
-                              title="Replace"
-                              className="w-8 h-8 bg-white text-slate-900 rounded-lg flex items-center justify-center text-[10px] shadow-xl hover:bg-sky-500 hover:text-white transition-all"
-                           >
-                              <i className="fa-solid fa-arrows-rotate"></i>
-                           </button>
-                           <button 
-                              type="button" 
-                              onClick={() => setFormData({ ...formData, imageUrls: formData.imageUrls?.filter((_, idx) => idx !== i) })}
-                              title="Delete"
-                              className="w-8 h-8 bg-red-500 text-white rounded-lg flex items-center justify-center text-[10px] shadow-xl hover:bg-red-600 transition-all"
-                           >
-                              <i className="fa-solid fa-trash"></i>
-                           </button>
+                        <div className={`absolute inset-0 bg-slate-900/60 transition-opacity rounded-[1.5rem] flex items-center justify-center gap-2 ${url.startsWith('blob:') ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                           {url.startsWith('blob:') ? (
+                              <div className="animate-spin w-6 h-6 border-2 border-white/20 border-t-white rounded-full"></div>
+                           ) : (
+                             <>
+                               <button 
+                                  type="button" 
+                                  onClick={() => handleImagePicker(i)}
+                                  title="Replace"
+                                  className="w-8 h-8 bg-white text-slate-900 rounded-lg flex items-center justify-center text-[10px] shadow-xl hover:bg-sky-500 hover:text-white transition-all"
+                               >
+                                  <i className="fa-solid fa-arrows-rotate"></i>
+                               </button>
+                               <button 
+                                  type="button" 
+                                  onClick={() => setFormData({ ...formData, imageUrls: formData.imageUrls?.filter((_, idx) => idx !== i) })}
+                                  title="Delete"
+                                  className="w-8 h-8 bg-red-500 text-white rounded-lg flex items-center justify-center text-[10px] shadow-xl hover:bg-red-600 transition-all"
+                               >
+                                  <i className="fa-solid fa-trash"></i>
+                               </button>
+                             </>
+                           )}
                         </div>
                       </div>
                     ))}
@@ -530,9 +540,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                   </div>
                 </div>
 
-                <button type="submit" disabled={isSyncing} className="w-full bg-slate-900 text-white font-black py-6 rounded-2xl uppercase text-[10px] tracking-widest shadow-xl active:scale-[0.98] transition-transform flex items-center justify-center gap-3">
-                  <i className="fa-solid fa-cloud-arrow-up"></i>
-                  {isSyncing ? 'Committing Changes...' : 'Commit to Cloud'}
+                <button 
+                  type="submit" 
+                  disabled={isSyncing || isUploading} 
+                  className="w-full bg-slate-900 text-white font-black py-6 rounded-2xl uppercase text-[10px] tracking-widest shadow-xl active:scale-[0.98] transition-transform flex items-center justify-center gap-3 disabled:opacity-50"
+                >
+                  <i className={`fa-solid ${isSyncing ? 'fa-spinner animate-spin' : 'fa-cloud-arrow-up'}`}></i>
+                  {isSyncing ? 'Committing Changes...' : (isUploading ? 'Waiting for Uploads...' : 'Commit to Cloud')}
                 </button>
               </form>
             </div>

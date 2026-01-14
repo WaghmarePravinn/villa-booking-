@@ -21,6 +21,15 @@ const isValidUUID = (id: string) => {
   return regex.test(id);
 };
 
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = error => reject(error);
+  });
+};
+
 const getLocalVillas = (): Villa[] => {
   const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
   if (!saved) return INITIAL_VILLAS;
@@ -94,11 +103,12 @@ const mapToDb = (v: Partial<Villa>) => {
   if (v.longDescription !== undefined) payload.long_description = v.longDescription;
   
   if (v.imageUrls !== undefined) {
-    payload.image_urls = v.imageUrls.filter(url => !url.startsWith('blob:'));
+    // Keep cloud URLs and base64 URLs. Filter out temporary blob: URLs
+    payload.image_urls = v.imageUrls.filter(url => url.startsWith('http') || url.startsWith('data:'));
   }
   
   if (v.videoUrls !== undefined) {
-    payload.video_urls = v.videoUrls.filter(url => !url.startsWith('blob:'));
+    payload.video_urls = v.videoUrls.filter(url => url.startsWith('http') || url.startsWith('data:'));
   }
   
   if (v.amenities !== undefined) payload.amenities = v.amenities;
@@ -193,7 +203,7 @@ export const deleteVillaById = async (id: string): Promise<void> => {
 export const uploadMedia = async (file: File, folder: 'images' | 'videos', onProgress?: (percent: number) => void): Promise<string> => {
   if (!isSupabaseAvailable) {
     if (onProgress) onProgress(100);
-    return URL.createObjectURL(file);
+    return await fileToBase64(file);
   }
   
   const fileExt = file.name.split('.').pop();
@@ -217,7 +227,6 @@ export const uploadMedia = async (file: File, folder: 'images' | 'videos', onPro
  * Checks the system integrity for Database and Storage
  */
 export const verifyCloudConnectivity = async () => {
-  // Fix: Return a consistent return structure to resolve TypeScript union errors in AdminDashboard.tsx
   if (!isSupabaseAvailable) return { 
     db: false, 
     storage: false, 
@@ -227,7 +236,6 @@ export const verifyCloudConnectivity = async () => {
   
   const results = { db: false, storage: false, dbError: null as any, storageError: null as any };
   
-  // 1. Check DB
   try {
     const { error } = await supabase.from(TABLE).select('id', { count: 'exact', head: true });
     if (error) throw error;
@@ -236,7 +244,6 @@ export const verifyCloudConnectivity = async () => {
     results.dbError = e.message;
   }
   
-  // 2. Check Storage
   try {
     const { data, error } = await supabase.storage.getBucket('villa-media');
     if (error) throw error;
