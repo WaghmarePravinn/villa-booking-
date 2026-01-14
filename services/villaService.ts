@@ -103,7 +103,7 @@ const mapToDb = (v: Partial<Villa>) => {
   if (v.longDescription !== undefined) payload.long_description = v.longDescription;
   
   if (v.imageUrls !== undefined) {
-    // Keep cloud URLs and base64 URLs. Filter out temporary blob: URLs
+    // Only persist Cloud URLs (http) or Base64 (data:). Filter temporary Blobs.
     payload.image_urls = v.imageUrls.filter(url => url.startsWith('http') || url.startsWith('data:'));
   }
   
@@ -223,9 +223,6 @@ export const uploadMedia = async (file: File, folder: 'images' | 'videos', onPro
   }
 };
 
-/**
- * Checks the system integrity for Database and Storage
- */
 export const verifyCloudConnectivity = async () => {
   if (!isSupabaseAvailable) return { 
     db: false, 

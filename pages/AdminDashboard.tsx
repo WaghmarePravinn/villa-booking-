@@ -266,7 +266,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
       }
       
       setFormData(prev => ({ ...prev, imageUrls: currentUrls }));
-      setProgress({ active: true, message: 'Assets Synced', percentage: 100, subMessage: 'Images are ready for cloud commit.' });
+      setProgress({ active: true, message: 'Assets Buffered', percentage: 100, subMessage: 'Images are ready for cloud commit.' });
       setTimeout(() => setProgress(prev => ({ ...prev, active: false })), 2000);
     } catch (err: any) {
       setProgress({ 
@@ -274,7 +274,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
         message: 'Sync Interrupted', 
         percentage: 0, 
         error: err.message,
-        subMessage: 'Ensure villa-media bucket is public.' 
+        subMessage: 'Check Supabase storage policies or bucket setup.' 
       });
     } finally {
       setIsUploading(false);
@@ -519,7 +519,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                                   onClick={() => setFormData({ ...formData, imageUrls: formData.imageUrls?.filter((_, idx) => idx !== i) })}
                                   title="Delete"
                                   className="w-8 h-8 bg-red-500 text-white rounded-lg flex items-center justify-center text-[10px] shadow-xl hover:bg-red-600 transition-all"
-                               >
+                                >
                                   <i className="fa-solid fa-trash"></i>
                                </button>
                              </>
@@ -546,7 +546,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                   className="w-full bg-slate-900 text-white font-black py-6 rounded-2xl uppercase text-[10px] tracking-widest shadow-xl active:scale-[0.98] transition-transform flex items-center justify-center gap-3 disabled:opacity-50"
                 >
                   <i className={`fa-solid ${isSyncing ? 'fa-spinner animate-spin' : 'fa-cloud-arrow-up'}`}></i>
-                  {isSyncing ? 'Committing Changes...' : (isUploading ? 'Waiting for Uploads...' : 'Commit to Cloud')}
+                  {isSyncing ? 'Committing Changes...' : (isUploading ? 'Syncing Media...' : 'Commit to Cloud')}
                 </button>
               </form>
             </div>

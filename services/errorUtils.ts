@@ -6,7 +6,7 @@ export const handleDbError = (error: any, tableName: string) => {
   const msg = rawMsg.toLowerCase();
   
   // Storage specific errors
-  if (msg.includes("bucket") || msg.includes("not found") && tableName === 'storage') {
+  if (msg.includes("bucket") || (msg.includes("not found") && tableName === 'storage')) {
     return new Error(`[STORAGE SETUP REQUIRED]
     
 The "villa-media" bucket does not exist. 
@@ -26,11 +26,35 @@ Your database schema is out of sync. Please run this script in your Supabase SQL
 
 -- 1. Ensure tables exist
 CREATE TABLE IF NOT EXISTS profiles (id uuid DEFAULT gen_random_uuid() PRIMARY KEY, username text UNIQUE, password text, email text, role text DEFAULT 'USER', created_at timestamptz DEFAULT now());
-CREATE TABLE IF NOT EXISTS villas (id uuid DEFAULT gen_random_uuid() PRIMARY KEY, name text, location text, price_per_night numeric DEFAULT 0, bedrooms int, bathrooms int, capacity int, description text, long_description text, image_urls text[] DEFAULT '{}', video_urls text[] DEFAULT '{}', amenities text[] DEFAULT '{}', included_services text[] DEFAULT '{}', is_featured boolean DEFAULT false, rating numeric DEFAULT 5, rating_count int DEFAULT 0, created_at timestamptz DEFAULT now());
-CREATE TABLE IF NOT EXISTS testimonials (id uuid DEFAULT gen_random_uuid() PRIMARY KEY, name text, content text, avatar text, rating int DEFAULT 5, created_at timestamptz DEFAULT now());
+
+CREATE TABLE IF NOT EXISTS villas (
+    id uuid DEFAULT gen_random_uuid() PRIMARY KEY, 
+    name text NOT NULL, 
+    location text NOT NULL, 
+    price_per_night numeric DEFAULT 0, 
+    bedrooms int DEFAULT 0, 
+    bathrooms int DEFAULT 0, 
+    capacity int DEFAULT 0, 
+    description text, 
+    long_description text, 
+    image_urls text[] DEFAULT '{}', 
+    video_urls text[] DEFAULT '{}', 
+    amenities text[] DEFAULT '{}', 
+    included_services text[] DEFAULT '{}', 
+    is_featured boolean DEFAULT false, 
+    rating numeric DEFAULT 5, 
+    rating_count int DEFAULT 0, 
+    num_rooms int DEFAULT 0,
+    meals_available boolean DEFAULT false,
+    pet_friendly boolean DEFAULT false,
+    refund_policy text,
+    created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS testimonials (id uuid DEFAULT gen_random_uuid() PRIMARY KEY, name text, content text, avatar text, category text DEFAULT 'Trip', rating int DEFAULT 5, created_at timestamptz DEFAULT now());
 CREATE TABLE IF NOT EXISTS services (id uuid DEFAULT gen_random_uuid() PRIMARY KEY, title text, description text, icon text DEFAULT 'fa-concierge-bell', created_at timestamptz DEFAULT now());
-CREATE TABLE IF NOT EXISTS leads (id uuid DEFAULT gen_random_uuid() PRIMARY KEY, villa_id uuid, villa_name text, customer_name text, user_id uuid, source text, status text DEFAULT 'new', check_in date, check_out date, created_at timestamptz DEFAULT now());
-CREATE TABLE IF NOT EXISTS site_settings (id int PRIMARY KEY, active_theme text, promo_text text, whatsapp_number text, contact_email text, contact_phone text);
+CREATE TABLE IF NOT EXISTS leads (id uuid DEFAULT gen_random_uuid() PRIMARY KEY, villa_id uuid, villa_name text, customer_name text, user_id uuid, source text DEFAULT 'Direct Inquiry', status text DEFAULT 'new', check_in date, check_out date, created_at timestamptz DEFAULT now());
+CREATE TABLE IF NOT EXISTS site_settings (id int PRIMARY KEY, active_theme text DEFAULT 'DEFAULT', promo_text text, whatsapp_number text, contact_email text, contact_phone text);
 
 -- 2. Add missing columns to existing site_settings (Fixes your current error)
 ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS whatsapp_number text;
