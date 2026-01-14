@@ -1,5 +1,4 @@
-
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Villa, User } from '../types';
 import { WHATSAPP_NUMBER } from '../constants';
 import DateRangePicker from '../components/DateRangePicker';
@@ -17,6 +16,7 @@ const VillaDetailPage: React.FC<VillaDetailPageProps> = ({ villa, user, onBack }
   const [checkOut, setCheckOut] = useState('');
   const [showPicker, setShowPicker] = useState(false);
   const [activeImage, setActiveImage] = useState(villa.imageUrls?.[0] || '');
+  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -25,22 +25,52 @@ const VillaDetailPage: React.FC<VillaDetailPageProps> = ({ villa, user, onBack }
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleWhatsApp = () => {
-    saveLead({
-      villaId: villa.id,
-      villaName: villa.name,
-      source: 'WhatsApp',
-      userId: user?.id,
-      customerName: user?.username,
-      checkIn: checkIn || undefined,
-      checkOut: checkOut || undefined
-    });
-    const message = encodeURIComponent(`Inquiry for ${villa.name}. Stay: ${checkIn} - ${checkOut}`);
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, '_blank');
+  const handleWhatsApp = async () => {
+    try {
+      await saveLead({
+        villaId: villa.id,
+        villaName: villa.name,
+        source: 'WhatsApp',
+        userId: user?.id,
+        customerName: user?.username,
+        checkIn: checkIn || undefined,
+        checkOut: checkOut || undefined
+      });
+      
+      setShowSuccess(true);
+      
+      // Delay to let user see success state before redirection
+      setTimeout(() => {
+        const message = encodeURIComponent(`Jai Hind! I'm interested in ${villa.name} for the stay: ${checkIn || 'flexible'} to ${checkOut || 'flexible'}. Please confirm availability.`);
+        window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, '_blank');
+        setShowSuccess(false);
+      }, 2000);
+      
+    } catch (error) {
+      alert("Failed to process inquiry. Please try again.");
+    }
   };
 
   return (
-    <div className="bg-white min-h-screen pb-20 animate-fade">
+    <div className="bg-white min-h-screen pb-20 animate-fade relative">
+      {/* Success Overlay */}
+      {showSuccess && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-sky-900/40 backdrop-blur-xl animate-fade">
+          <div className="bg-white p-12 rounded-[3.5rem] shadow-2xl text-center animate-popup max-w-sm w-full">
+            <div className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner">
+              <i className="fa-solid fa-check text-4xl text-emerald-600"></i>
+            </div>
+            <h2 className="text-3xl font-bold font-serif text-sky-900 mb-4">Inquiry Recorded!</h2>
+            <p className="text-sky-600 font-medium leading-relaxed">Connecting you with our premium concierge via WhatsApp...</p>
+            <div className="mt-8 flex justify-center gap-2">
+              <div className="w-2 h-2 bg-orange-500 rounded-full animate-bounce"></div>
+              <div className="w-2 h-2 bg-white border border-sky-100 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Dynamic Header */}
       <div className="max-w-7xl mx-auto px-4 py-6 flex items-center justify-between">
         <button onClick={onBack} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-all">
@@ -135,10 +165,11 @@ const VillaDetailPage: React.FC<VillaDetailPageProps> = ({ villa, user, onBack }
 
             <button 
               onClick={handleWhatsApp}
-              className="w-full bg-emerald-500 text-white font-black py-6 rounded-2xl shadow-xl hover:bg-emerald-600 transition-all uppercase text-[10px] tracking-widest flex items-center justify-center gap-3"
+              disabled={showSuccess}
+              className="w-full bg-emerald-500 text-white font-black py-6 rounded-2xl shadow-xl hover:bg-emerald-600 transition-all uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 disabled:opacity-50"
             >
               <i className="fa-brands fa-whatsapp text-xl"></i>
-              Confirm Availability
+              {showSuccess ? 'Processing...' : 'Confirm Availability'}
             </button>
           </div>
         </div>

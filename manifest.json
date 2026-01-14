@@ -1,0 +1,22 @@
+
+{
+  "short_name": "Peak Stay",
+  "name": "Peak Stay Destination - Luxury Villa Bookings",
+  "icons": [
+    {
+      "src": "https://images.unsplash.com/photo-1560185127-6ed189bf02f4?auto=format&fit=crop&q=80&w=192",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1560185127-6ed189bf02f4?auto=format&fit=crop&q=80&w=512",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#f0f9ff",
+  "display": "standalone",
+  "theme_color": "#FF9933",
+  "description": "Premium villa booking platform celebrating Indian hospitality."
+}
