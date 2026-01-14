@@ -23,11 +23,7 @@ const App: React.FC = () => {
   });
   
   const [villas, setVillas] = useState<Villa[]>(isSupabaseAvailable ? [] : INITIAL_VILLAS);
-  const [settings, setSettings] = useState<SiteSettings>({
-    ...DEFAULT_SETTINGS,
-    activeTheme: AppTheme.REPUBLIC_DAY,
-    promoText: "REPUBLIC DAY SPECIAL: CELEBRATE WITH FLAT 26% OFF ON ALL STAYS"
-  });
+  const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   
   const [currentPage, setCurrentPage] = useState<string>('home');
@@ -43,7 +39,8 @@ const App: React.FC = () => {
 
     const unsubscribeSettings = subscribeToSettings((newSettings) => {
       setSettings(newSettings);
-      document.body.className = 'theme-republic-day'; // Force the theme for this specific celebration
+      // Dynamically set the theme class on body
+      document.body.className = `theme-${newSettings.activeTheme}`;
     });
 
     const timer = setTimeout(() => setLoading(false), 2000);
@@ -128,19 +125,14 @@ const App: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-sky-50 flex flex-col items-center justify-center space-y-8 z-[9999]">
+      <div className="fixed inset-0 bg-white flex flex-col items-center justify-center space-y-8 z-[9999]">
         <div className="relative">
-          <div className="w-24 h-24 border-2 border-orange-200 rounded-full animate-ping absolute inset-0"></div>
-          <div className="w-24 h-24 border-t-2 border-orange-500 rounded-full animate-spin"></div>
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-1">
-             <div className="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
-             <div className="w-1.5 h-1.5 bg-white border border-gray-200 rounded-full"></div>
-             <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-          </div>
+          <div className="w-24 h-24 border-2 border-slate-200 rounded-full animate-ping absolute inset-0"></div>
+          <div className="w-24 h-24 border-t-2 border-slate-900 rounded-full animate-spin"></div>
         </div>
         <div className="text-center">
-          <p className="text-sky-900 font-serif text-3xl mb-2">Peak Stay</p>
-          <p className="text-orange-500 font-bold tracking-[0.4em] uppercase text-[10px] animate-pulse">Republic Day 2025 Edition</p>
+          <p className="text-slate-900 font-serif text-3xl mb-2">Peak Stay</p>
+          <p className="text-slate-400 font-bold tracking-[0.4em] uppercase text-[10px] animate-pulse">Syncing Sanctuary...</p>
         </div>
       </div>
     );

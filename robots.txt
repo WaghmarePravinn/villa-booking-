@@ -1,6 +1,7 @@
-
 User-agent: *
 Allow: /
 Disallow: /admin
+Disallow: /login
 
+# Replace 'yourdomain.com' with your actual GoDaddy domain after setup
 Sitemap: https://yourdomain.com/sitemap.xml

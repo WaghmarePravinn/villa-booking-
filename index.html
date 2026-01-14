@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Peak Stay | Republic Day Luxury Collection</title>
+    <title>Peak Stay | Luxury Villa Collection</title>
     <meta name="theme-color" content="#FF9933">
     <link rel="manifest" href="/manifest.json">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -13,30 +13,82 @@
     <style>
         :root {
             --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-            --theme-primary: #FF9933; /* Saffron */
-            --theme-primary-rgb: 255, 153, 51;
-            --theme-secondary: #bae6fd; /* Light Sky Blue */
-            --theme-accent: #128807; /* Indian Green */
-            --theme-text: #1e3a8a; /* Navy Blue (Chakra) */
-            --theme-bg: #f0f9ff; /* Very Light Sky Blue */
-            --theme-marquee-bg: #FF9933;
-            --theme-marquee-text: #ffffff;
+            --t-primary: #0f172a;
+            --t-accent: #f59e0b;
+            --t-secondary: #10b981;
+            --t-bg: #f8fafc;
+            --t-card-bg: #ffffff;
+            --t-text: #1e293b;
+            --t-marquee-bg: #0f172a;
+            --t-marquee-text: #ffffff;
         }
 
-        .theme-republic-day {
-            --theme-primary: #FF9933;
-            --theme-secondary: #f0f9ff;
-            --theme-accent: #128807;
-            --theme-text: #1e3a8a;
-            --theme-bg: #f0f9ff;
+        /* Patriotic Themes (Republic Day / Independence Day) */
+        .theme-REPUBLIC_DAY, .theme-INDEPENDENCE_DAY {
+            --t-primary: #FF9933;
+            --t-accent: #128807;
+            --t-secondary: #000080;
+            --t-bg: #f0f9ff;
+            --t-card-bg: #ffffff;
+            --t-text: #1e3a8a;
+            --t-marquee-bg: #FF9933;
+            --t-marquee-text: #ffffff;
+        }
+
+        /* Holi Theme - Vibrance and Neon */
+        .theme-HOLI {
+            --t-primary: #ec4899;
+            --t-accent: #eab308;
+            --t-secondary: #06b6d4;
+            --t-bg: #fdf2f8;
+            --t-card-bg: #ffffff;
+            --t-text: #831843;
+            --t-marquee-bg: #db2777;
+            --t-marquee-text: #ffffff;
+        }
+
+        /* Diwali Theme - Gold and Warmth */
+        .theme-DIWALI {
+            --t-primary: #7c2d12;
+            --t-accent: #f59e0b;
+            --t-secondary: #92400e;
+            --t-bg: #fff7ed;
+            --t-card-bg: #ffffff;
+            --t-text: #431407;
+            --t-marquee-bg: #7c2d12;
+            --t-marquee-text: #fde68a;
+        }
+
+        /* Summer Theme - Tropical and Bright */
+        .theme-SUMMER {
+            --t-primary: #0ea5e9;
+            --t-accent: #fbbf24;
+            --t-secondary: #10b981;
+            --t-bg: #f0f9ff;
+            --t-card-bg: #ffffff;
+            --t-text: #0c4a6e;
+            --t-marquee-bg: #0ea5e9;
+            --t-marquee-text: #ffffff;
+        }
+
+        /* Winter Theme - Cool and Elegant */
+        .theme-WINTER {
+            --t-primary: #1e293b;
+            --t-accent: #38bdf8;
+            --t-secondary: #94a3b8;
+            --t-bg: #f1f5f9;
+            --t-card-bg: #ffffff;
+            --t-text: #0f172a;
+            --t-marquee-bg: #1e293b;
+            --t-marquee-text: #e2e8f0;
         }
 
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
             -webkit-font-smoothing: antialiased;
-            background-color: var(--theme-bg);
-            color: var(--theme-text);
-            transition: all 0.5s var(--ease-out-expo);
+            background-color: var(--t-bg);
+            color: var(--t-text);
+            transition: background-color 0.8s ease, color 0.8s ease;
             overflow-x: hidden;
         }
 
@@ -45,7 +97,7 @@
         }
 
         .text-theme-shimmer {
-            background: linear-gradient(to right, #FF9933, #0c4a6e, #128807, #FF9933);
+            background: linear-gradient(to right, var(--t-primary), var(--t-accent), var(--t-secondary), var(--t-primary));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-size: 200% auto;
@@ -71,34 +123,37 @@
         .animate-chakra { animation: chakra-spin 10s linear infinite; }
         
         .glass-panel {
-            background: rgba(240, 249, 255, 0.8);
+            background: rgba(255, 255, 255, 0.7);
             backdrop-filter: blur(20px) saturate(180%);
             -webkit-backdrop-filter: blur(20px) saturate(180%);
             border: 1px solid rgba(255, 255, 255, 0.5);
         }
 
-        .republic-btn {
-            background: linear-gradient(135deg, #FF9933 0%, #ffffff 50%, #128807 100%);
-            background-size: 200% 200%;
-            transition: all 0.5s ease;
-            color: #1e3a8a;
-            font-weight: 900;
-            border: 1px solid rgba(30, 58, 138, 0.1);
+        .theme-btn {
+            background: var(--t-primary);
+            color: white;
+            transition: all 0.3s ease;
         }
-        .republic-btn:hover {
-            background-position: 100% 100%;
-            transform: translateY(-2px); box-shadow: 0 10px 30px rgba(255, 153, 51, 0.3);
+        .theme-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            opacity: 0.9;
         }
 
         ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f0f9ff; }
-        ::-webkit-scrollbar-thumb { background: #FF9933; border-radius: 10px; }
+        ::-webkit-scrollbar-track { background: var(--t-bg); }
+        ::-webkit-scrollbar-thumb { background: var(--t-primary); border-radius: 10px; }
 
         .float-animation { animation: floating 3s ease-in-out infinite; }
         @keyframes floating {
             0% { transform: translateY(0px); }
             50% { transform: translateY(-10px); }
             100% { transform: translateY(0px); }
+        }
+
+        /* Generic transition for elements using variables */
+        * {
+            transition: border-color 0.3s ease, background-color 0.3s ease;
         }
     </style>
 <script type="importmap">
@@ -116,7 +171,7 @@
 }
 </script>
 </head>
-<body class="theme-republic-day">
+<body class="theme-DEFAULT">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
 </body>
