@@ -5,7 +5,7 @@ import { generateVillaFromPrompt } from '../services/geminiService';
 import { uploadMedia } from '../services/villaService';
 import { updateSettings } from '../services/settingsService';
 import { subscribeToLeads, updateLeadStatus, deleteLead } from '../services/leadService';
-import { subscribeToTestimonials, deleteTestimonial } from '../services/testimonialService';
+import { subscribeToTestimonials, deleteTestimonial, addTestimonial } from '../services/testimonialService';
 import { subscribeToServices, createService, updateService, deleteService } from '../services/serviceService';
 
 interface AdminDashboardProps {
@@ -48,11 +48,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
   });
   
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
   const imageInputRef = useRef<HTMLInputElement>(null);
   
   useEffect(() => {
     const unsubLeads = subscribeToLeads(setLeads);
-    return () => unsubLeads();
+    const unsubTestimonials = subscribeToTestimonials(setTestimonials);
+    const unsubServices = subscribeToServices(setServices);
+    return () => {
+      unsubLeads();
+      unsubTestimonials();
+      unsubServices();
+    };
   }, []);
 
   useEffect(() => {
@@ -283,7 +291,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
            </div>
         </div>
         <div className="bg-slate-100 p-1.5 rounded-2xl flex gap-1 overflow-x-auto max-w-full shadow-inner">
-          {['inventory', 'inquiries', 'branding'].map(tab => (
+          {['inventory', 'inquiries', 'services', 'reviews', 'branding'].map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab as AdminTab)} className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === tab ? 'bg-white text-slate-900 shadow-md scale-105' : 'text-slate-400 hover:text-slate-600'}`}>
               {tab}
             </button>
@@ -403,6 +411,90 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {activeTab === 'reviews' && (
+        <div className="bg-white p-12 rounded-[3.5rem] border border-slate-100 shadow-sm animate-reveal h-[calc(100vh-280px)] overflow-y-auto no-scrollbar">
+          <div className="flex justify-between items-center mb-12">
+            <h2 className="text-3xl font-bold font-serif text-slate-900">Testimonial Moderation</h2>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{testimonials.length} Stories Collected</p>
+          </div>
+          <div className="space-y-6">
+            {testimonials.map(t => (
+              <div key={t.id} className="bg-slate-50/50 p-8 rounded-[2.5rem] border border-slate-100 flex justify-between items-center gap-6 group hover:bg-white hover:shadow-xl transition-all">
+                <div className="flex items-center gap-6">
+                   <img src={t.avatar} className="w-16 h-16 rounded-2xl object-cover shadow-sm grayscale group-hover:grayscale-0 transition-all" alt="" />
+                   <div>
+                     <div className="flex items-center gap-3">
+                        <h3 className="text-xl font-bold text-slate-900">{t.name}</h3>
+                        <span className="bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest">
+                          {t.category}
+                        </span>
+                     </div>
+                     <p className="text-xs text-slate-500 font-medium italic line-clamp-2 mt-1">"{t.content}"</p>
+                     <p className="text-[8px] font-black text-slate-300 uppercase mt-2">{t.timestamp ? new Date(t.timestamp).toLocaleString() : 'Recent'}</p>
+                   </div>
+                </div>
+                <div className="flex items-center gap-4">
+                   <button onClick={() => deleteTestimonial(t.id)} className="w-12 h-12 rounded-xl bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-all">
+                      <i className="fa-solid fa-trash-can"></i>
+                   </button>
+                </div>
+              </div>
+            ))}
+            {testimonials.length === 0 && (
+              <div className="py-20 text-center border-2 border-dashed border-slate-100 rounded-[3rem]">
+                <p className="text-slate-400 font-black uppercase text-[10px] tracking-widest">No testimonials to moderate</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'services' && (
+        <div className="bg-white p-12 rounded-[3.5rem] border border-slate-100 shadow-sm animate-reveal h-[calc(100vh-280px)] overflow-y-auto no-scrollbar">
+           <div className="flex justify-between items-center mb-12">
+              <h2 className="text-3xl font-bold font-serif text-slate-900">Hospitality Services</h2>
+              <button 
+                onClick={() => createService({ title: 'New Service', description: 'Describe the premium offering...', icon: 'fa-star' })}
+                className="px-6 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest"
+              >
+                + Add Service
+              </button>
+           </div>
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {services.map(s => (
+                <div key={s.id} className="bg-slate-50/50 p-8 rounded-[2.5rem] border border-slate-100 group hover:bg-white hover:shadow-xl transition-all">
+                   <div className="flex items-center gap-6 mb-6">
+                      <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-orange-500 text-xl shadow-inner">
+                         <i className={`fa-solid ${s.icon}`}></i>
+                      </div>
+                      <div className="flex-grow">
+                         <input 
+                            value={s.title} 
+                            onChange={(e) => updateService(s.id, { title: e.target.value })}
+                            className="bg-transparent font-bold text-slate-900 outline-none w-full border-b border-transparent focus:border-slate-200"
+                         />
+                         <input 
+                            value={s.icon} 
+                            onChange={(e) => updateService(s.id, { icon: e.target.value })}
+                            className="bg-transparent text-[8px] font-black text-slate-400 uppercase tracking-widest outline-none w-full mt-1"
+                         />
+                      </div>
+                   </div>
+                   <textarea 
+                      value={s.description} 
+                      onChange={(e) => updateService(s.id, { description: e.target.value })}
+                      className="w-full bg-transparent text-xs text-slate-500 leading-relaxed outline-none resize-none"
+                      rows={3}
+                   />
+                   <div className="flex justify-end mt-4">
+                      <button onClick={() => deleteService(s.id)} className="text-red-400 hover:text-red-600 text-[10px] font-black uppercase">Remove Service</button>
+                   </div>
+                </div>
+              ))}
+           </div>
         </div>
       )}
 

@@ -56,6 +56,8 @@ export interface Testimonial {
   content: string;
   rating: number;
   avatar: string;
+  category: 'Trip' | 'Booking' | 'Food' | 'Service' | 'Hospitality';
+  timestamp?: string;
 }
 
 export interface Service {

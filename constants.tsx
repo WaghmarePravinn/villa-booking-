@@ -72,9 +72,56 @@ export const TESTIMONIALS: Testimonial[] = [
   {
     id: '1',
     name: "Sarah Jenkins",
-    content: "The most seamless booking experience I've ever had. Villa Aarti was even more beautiful in person—the tiling and the pool were spectacular.",
+    content: "The most seamless booking experience I've ever had. Villa Aarti was even more beautiful in person.",
     rating: 5,
-    avatar: "https://i.pravatar.cc/150?u=sarah"
+    avatar: "https://i.pravatar.cc/150?u=sarah",
+    category: 'Booking',
+    timestamp: new Date().toISOString()
+  },
+  {
+    id: '2',
+    name: "Ankit Sharma",
+    content: "The Butter Chicken served in the villa was out of this world. Highly recommend the private chef service!",
+    rating: 5,
+    avatar: "https://i.pravatar.cc/150?u=ankit",
+    category: 'Food',
+    timestamp: new Date(Date.now() - 86400000).toISOString()
+  },
+  {
+    id: '3',
+    name: "Elena Rodriguez",
+    content: "Our Lonavala trip was magical. The sunset views from the deck were the highlight of our vacation.",
+    rating: 5,
+    avatar: "https://i.pravatar.cc/150?u=elena",
+    category: 'Trip',
+    timestamp: new Date(Date.now() - 172800000).toISOString()
+  },
+  {
+    id: '4',
+    name: "Vikram Malhotra",
+    content: "Exceptional staff service! They managed our large group of 15 with such grace and efficiency.",
+    rating: 5,
+    avatar: "https://i.pravatar.cc/150?u=vikram",
+    category: 'Service',
+    timestamp: new Date(Date.now() - 3600000).toISOString()
+  },
+  {
+    id: '5',
+    name: "Pooja Hegde",
+    content: "The hospitality here is unmatched. From the welcome drinks to the personalized checkout, everything was perfect.",
+    rating: 5,
+    avatar: "https://i.pravatar.cc/150?u=pooja",
+    category: 'Hospitality',
+    timestamp: new Date(Date.now() - 7200000).toISOString()
+  },
+  {
+    id: '6',
+    name: "Rohan Das",
+    content: "Booked a last-minute getaway and the team was so helpful. The villa exceeded all expectations!",
+    rating: 5,
+    avatar: "https://i.pravatar.cc/150?u=rohan",
+    category: 'Booking',
+    timestamp: new Date(Date.now() - 120000).toISOString()
   }
 ];
 

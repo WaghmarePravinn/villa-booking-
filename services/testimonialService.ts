@@ -11,7 +11,9 @@ const mapFromDb = (t: any): Testimonial => ({
   name: t.name || "Guest",
   content: t.content || "",
   rating: Number(t.rating || 5),
-  avatar: t.avatar || `https://i.pravatar.cc/150?u=${t.id}`
+  avatar: t.avatar || `https://i.pravatar.cc/150?u=${t.id}`,
+  category: (t.category as Testimonial['category']) || 'Trip',
+  timestamp: t.created_at || new Date().toISOString()
 });
 
 export const subscribeToTestimonials = (callback: (data: Testimonial[]) => void) => {
@@ -22,10 +24,10 @@ export const subscribeToTestimonials = (callback: (data: Testimonial[]) => void)
 
   const fetchTestimonials = async () => {
     try {
-      // Fixed: Removed .order('created_at')
       const { data, error } = await supabase
         .from(TABLE)
-        .select('*');
+        .select('*')
+        .order('created_at', { ascending: false });
       
       if (!error && data) callback(data.map(mapFromDb));
     } catch (err) {
@@ -44,7 +46,7 @@ export const subscribeToTestimonials = (callback: (data: Testimonial[]) => void)
   return () => { supabase.removeChannel(channel); };
 };
 
-export const addTestimonial = async (review: Omit<Testimonial, 'id'>): Promise<string> => {
+export const addTestimonial = async (review: Omit<Testimonial, 'id' | 'timestamp'>): Promise<string> => {
   if (!isSupabaseAvailable) return "local-rev";
   
   const { data, error } = await supabase
