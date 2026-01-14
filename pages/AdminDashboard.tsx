@@ -39,6 +39,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
   
   const [promoText, setPromoText] = useState(settings.promoText);
   const [activeTheme, setActiveTheme] = useState(settings.activeTheme);
+  
+  // New state for deletion confirmation
+  const [villaToDelete, setVillaToDelete] = useState<Villa | null>(null);
 
   const [progress, setProgress] = useState<ProgressState>({
     active: false,
@@ -175,6 +178,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
     }
   };
 
+  const handleConfirmDelete = async () => {
+    if (!villaToDelete) return;
+    
+    setIsSyncing(true);
+    setProgress({ active: true, message: 'Removing Asset...', percentage: 50, error: null });
+    
+    try {
+      await onDeleteVilla(villaToDelete.id);
+      setProgress({ active: true, message: 'Property Purged', percentage: 100, error: null, subMessage: `${villaToDelete.name} has been removed from catalog.` });
+      setTimeout(() => setProgress(prev => ({ ...prev, active: false })), 2000);
+    } catch (err: any) {
+      setProgress({ active: true, message: 'Purge Failed', percentage: 0, error: err.message });
+    } finally {
+      setIsSyncing(false);
+      setVillaToDelete(null);
+    }
+  };
+
   const handleManualImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -300,6 +321,35 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
         </div>
       )}
 
+      {/* DELETE CONFIRMATION MODAL */}
+      {villaToDelete && (
+        <div className="fixed inset-0 z-[3000] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-fade">
+          <div className="bg-white rounded-[3.5rem] p-12 max-w-md w-full shadow-2xl animate-popup text-center">
+            <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-8 text-red-600 text-4xl shadow-inner">
+               <i className="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h2 className="text-3xl font-bold font-serif text-slate-900 mb-4">Purge Asset?</h2>
+            <p className="text-slate-500 mb-10 leading-relaxed font-medium">
+              You are about to permanently remove <span className="text-slate-900 font-bold">"{villaToDelete.name}"</span> from the Peak Stay catalog. This action cannot be undone.
+            </p>
+            <div className="flex flex-col gap-4">
+               <button 
+                onClick={handleConfirmDelete}
+                className="w-full py-5 bg-red-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-red-600/20 hover:bg-red-700 transition-all active:scale-95"
+               >
+                 Confirm Deletion
+               </button>
+               <button 
+                onClick={() => setVillaToDelete(null)}
+                className="w-full py-5 bg-slate-100 text-slate-600 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all active:scale-95"
+               >
+                 Retain Property
+               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* DASHBOARD HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-12 gap-8 shrink-0">
         <div>
@@ -414,7 +464,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest truncate">{v.location}</p>
                     <div className="flex gap-2 mt-6">
                       <button onClick={() => handleEdit(v)} className="flex-1 py-3 bg-slate-900 text-white rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-orange-500 transition-colors">Modify</button>
-                      <button onClick={() => onDeleteVilla(v.id)} className="px-4 py-3 bg-red-50 text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-all"><i className="fa-solid fa-trash-can"></i></button>
+                      <button onClick={() => setVillaToDelete(v)} className="px-4 py-3 bg-red-50 text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-all"><i className="fa-solid fa-trash-can"></i></button>
                     </div>
                   </div>
                 </div>
