@@ -113,15 +113,6 @@ export const TESTIMONIALS: Testimonial[] = [
     avatar: "https://i.pravatar.cc/150?u=pooja",
     category: 'Hospitality',
     timestamp: new Date(Date.now() - 7200000).toISOString()
-  },
-  {
-    id: '6',
-    name: "Rohan Das",
-    content: "Booked a last-minute getaway and the team was so helpful. The villa exceeded all expectations!",
-    rating: 5,
-    avatar: "https://i.pravatar.cc/150?u=rohan",
-    category: 'Booking',
-    timestamp: new Date(Date.now() - 120000).toISOString()
   }
 ];
 

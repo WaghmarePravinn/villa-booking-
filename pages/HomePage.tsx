@@ -64,7 +64,6 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
       setTimeout(() => setLiveBooking(null), 5000);
     }, 15000);
 
-    // Show Festive Popup after delay
     const popupTimer = setTimeout(() => {
       const hasSeen = localStorage.getItem('republic_day_popup_seen');
       if (!hasSeen) {
@@ -328,6 +327,50 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
         </div>
       </section>
 
+      {/* Guest Chronicles / Reviews Section */}
+      <section className="py-32 bg-slate-900 overflow-hidden relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-20 flex flex-col md:flex-row justify-between items-end gap-10 relative z-10">
+          <div className="max-w-2xl">
+             <span className="text-orange-500 font-black uppercase tracking-[0.6em] text-[10px] mb-4 block">The Global Feed</span>
+             <h2 className="text-5xl md:text-7xl font-bold font-serif text-white leading-none mb-6">Voices of the Sanctuary</h2>
+             <p className="text-slate-400 font-light text-lg">Real feedback covering everything from recently done trips to our premium food service.</p>
+          </div>
+          <button onClick={() => (window as any).location.hash = 'testimonials'} className="republic-btn-outline px-10 py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white border border-white/20 hover:bg-white hover:text-slate-900 transition-all">Read More Stories</button>
+        </div>
+
+        <div className="flex animate-[marquee_50s_linear_infinite] whitespace-nowrap gap-10 hover:[animation-play-state:paused] py-10">
+           {[...testimonials, ...testimonials].map((t, i) => (
+             <div key={`${t.id}-${i}`} className="inline-block w-[450px] bg-white/5 backdrop-blur-xl border border-white/10 p-12 rounded-[4rem] group hover:bg-white hover:shadow-2xl transition-all duration-700 cursor-default">
+                <div className="flex justify-between items-start mb-8">
+                  <div className="flex gap-1 text-orange-500 text-[10px]">
+                    {[...Array(t.rating)].map((_, star) => <i key={star} className="fa-solid fa-star"></i>)}
+                  </div>
+                  <div className="flex items-center gap-2 bg-white/10 group-hover:bg-slate-900 group-hover:text-white px-4 py-2 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all">
+                    <i className={`fa-solid ${getCategoryIcon(t.category)}`}></i>
+                    {t.category}
+                  </div>
+                </div>
+                <p className="text-slate-300 group-hover:text-slate-700 whitespace-normal leading-loose font-medium mb-12 text-xl italic line-clamp-3">"{t.content}"</p>
+                <div className="flex items-center gap-6 mt-auto border-t border-white/10 group-hover:border-slate-100 pt-10">
+                  <div className="w-16 h-16 rounded-[1.5rem] overflow-hidden shadow-2xl transition-transform group-hover:rotate-3">
+                    <img src={t.avatar} alt={t.name} className="w-full h-full object-cover" />
+                  </div>
+                  <div>
+                    <h4 className="font-black text-white group-hover:text-slate-900 text-base">{t.name}</h4>
+                    <p className="text-[9px] text-orange-400 font-black uppercase tracking-[0.2em] mt-1">
+                      {t.category === 'Food' ? 'Culinary Review' : t.category === 'Trip' ? 'Travel Review' : 'Verified Stay'}
+                    </p>
+                  </div>
+                </div>
+             </div>
+           ))}
+        </div>
+        
+        {/* Decorative background glow */}
+        <div className="absolute top-1/2 left-0 w-[500px] h-[500px] bg-orange-500/10 rounded-full blur-[150px] -translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+        <div className="absolute top-1/2 right-0 w-[500px] h-[500px] bg-green-500/10 rounded-full blur-[150px] translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+      </section>
+
       {/* Interactive Stats Counter */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10" ref={statsRef}>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-16">
@@ -348,45 +391,22 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
         </div>
       </section>
 
-      {/* RECENT REVIEWS ANIMATED SECTION */}
-      <section className="py-24 bg-slate-900 overflow-hidden relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16 flex justify-between items-end relative z-10">
-          <div className="max-w-xl">
-             <span className="text-orange-500 font-black uppercase tracking-[0.5em] text-[10px] mb-4 block">Real Perspectives</span>
-             <h2 className="text-5xl font-bold font-serif text-white leading-tight">Voices of the Sanctuary</h2>
+      {/* Featured Collection */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <div className="mb-20 flex flex-col md:flex-row justify-between items-end gap-8">
+          <div className="max-w-2xl">
+            <span className="text-orange-600 font-black uppercase tracking-[0.5em] text-[10px] mb-4 block">Hand-Picked Legacy</span>
+            <h2 className="text-5xl md:text-8xl font-bold font-serif text-sky-900 leading-none">Patriotic Premier Stays</h2>
           </div>
-          <button onClick={() => (window as any).location.hash = 'testimonials'} className="text-[10px] font-black text-orange-400 uppercase tracking-widest border-b-2 border-orange-400 pb-2 hover:text-white hover:border-white transition-all">Read All Stories</button>
+          <button onClick={() => onExplore()} className="group flex items-center gap-4 text-[11px] font-black uppercase tracking-widest text-green-600 hover:text-orange-500 transition-all border border-green-100 hover:border-orange-100 px-12 py-6 rounded-[2rem] bg-white shadow-sm hover:shadow-2xl active:scale-95">
+            Explore All Collection <i className="fa-solid fa-chevron-right group-hover:translate-x-2 transition-transform"></i>
+          </button>
         </div>
-
-        <div className="flex animate-[marquee_60s_linear_infinite] whitespace-nowrap gap-8 hover:[animation-play-state:paused]">
-           {[...testimonials, ...testimonials].map((t, i) => (
-             <div key={`${t.id}-${i}`} className="inline-block w-[400px] bg-white/5 backdrop-blur-md border border-white/10 p-10 rounded-[3rem] group hover:bg-white hover:shadow-2xl transition-all duration-700">
-                <div className="flex justify-between items-start mb-6">
-                  <div className="flex gap-1 text-orange-500 text-[10px]">
-                    {[...Array(t.rating)].map((_, star) => <i key={star} className="fa-solid fa-star"></i>)}
-                  </div>
-                  <div className="flex items-center gap-2 bg-white/10 group-hover:bg-slate-900 group-hover:text-white px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest transition-colors">
-                    <i className={`fa-solid ${getCategoryIcon(t.category)}`}></i>
-                    {t.category}
-                  </div>
-                </div>
-                <p className="text-slate-300 group-hover:text-slate-700 whitespace-normal leading-loose font-medium mb-10 text-lg line-clamp-3">"{t.content}"</p>
-                <div className="flex items-center gap-4 mt-auto border-t border-white/10 group-hover:border-slate-100 pt-8">
-                  <div className="w-12 h-12 rounded-2xl overflow-hidden shadow-xl">
-                    <img src={t.avatar} alt={t.name} className="w-full h-full object-cover" />
-                  </div>
-                  <div>
-                    <h4 className="font-black text-white group-hover:text-slate-900 text-sm">{t.name}</h4>
-                    <p className="text-[8px] text-orange-400 font-black uppercase tracking-[0.2em] mt-1">Verified Guest Experience</p>
-                  </div>
-                </div>
-             </div>
-           ))}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
+          {featuredVillas.map(v => (
+            <VillaCard key={v.id} villa={v} onViewDetails={onViewDetails} />
+          ))}
         </div>
-        
-        {/* Background glow effects */}
-        <div className="absolute top-1/2 left-0 w-96 h-96 bg-orange-500/10 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
-        <div className="absolute top-1/2 right-0 w-96 h-96 bg-green-500/10 rounded-full blur-[120px] translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
       </section>
 
       {showPicker && (
@@ -405,24 +425,6 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
         </div>
       )}
 
-      {/* Featured Collection */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12">
-        <div className="mb-16 flex flex-col md:flex-row justify-between items-end gap-6">
-          <div className="max-w-xl">
-            <span className="text-orange-600 font-black uppercase tracking-[0.5em] text-[10px] mb-4 block">Hand-Picked Legacy</span>
-            <h2 className="text-5xl md:text-7xl font-bold font-serif text-sky-900 leading-tight">Patriotic Premier Stays</h2>
-          </div>
-          <button onClick={() => onExplore()} className="group flex items-center gap-4 text-[11px] font-black uppercase tracking-widest text-green-600 hover:text-orange-500 transition-all border border-green-100 hover:border-orange-100 px-10 py-5 rounded-2xl bg-white shadow-sm hover:shadow-xl">
-            Explore All Collection <i className="fa-solid fa-chevron-right group-hover:translate-x-1 transition-transform"></i>
-          </button>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
-          {featuredVillas.map(v => (
-            <VillaCard key={v.id} villa={v} onViewDetails={onViewDetails} />
-          ))}
-        </div>
-      </section>
-
       <style>{`
         @keyframes confetti-fall {
           0% { transform: translateY(0) rotate(0deg); opacity: 1; }
@@ -431,6 +433,10 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
         @keyframes marquee {
           from { transform: translateX(0); }
           to { transform: translateX(-50%); }
+        }
+        .republic-btn-outline {
+            border: 2px solid rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
         }
       `}</style>
     </div>
