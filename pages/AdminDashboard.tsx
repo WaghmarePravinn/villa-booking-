@@ -61,7 +61,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
   const replaceIndexRef = useRef<number | null>(null);
+  const replaceTypeRef = useRef<'image' | 'video'>('image');
   
   useEffect(() => {
     const unsubLeads = subscribeToLeads(setLeads);
@@ -168,6 +170,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
     setIsUploading(false);
     setMagicPrompt('');
     if (imageInputRef.current) imageInputRef.current.value = '';
+    if (videoInputRef.current) videoInputRef.current.value = '';
     replaceIndexRef.current = null;
   };
 
@@ -219,8 +222,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
   };
 
   const handleImagePicker = (index?: number) => {
+    replaceTypeRef.current = 'image';
     replaceIndexRef.current = index !== undefined ? index : null;
     imageInputRef.current?.click();
+  };
+
+  const handleVideoPicker = (index?: number) => {
+    replaceTypeRef.current = 'video';
+    replaceIndexRef.current = index !== undefined ? index : null;
+    videoInputRef.current?.click();
   };
 
   const handleManualImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -230,7 +240,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
     const isReplacing = replaceIndexRef.current !== null;
     const currentUrls = [...(formData.imageUrls || [])];
 
-    // Optimistically show a temporary blob while uploading
     if (isReplacing) {
       currentUrls[replaceIndexRef.current!] = URL.createObjectURL(files[0]);
       setFormData(prev => ({ ...prev, imageUrls: currentUrls }));
@@ -239,7 +248,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
     setIsUploading(true);
     setProgress({ 
       active: true, 
-      message: isReplacing ? 'Replacing asset...' : `Syncing ${files.length} assets...`, 
+      message: isReplacing ? 'Replacing image...' : `Syncing ${files.length} images...`, 
       percentage: 0, 
       error: null 
     });
@@ -258,7 +267,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
             setProgress(prev => ({
               ...prev,
               percentage: percent,
-              subMessage: `Syncing asset ${i + 1}/${files.length}: ${percent}%`
+              subMessage: `Syncing image ${i + 1}/${files.length}: ${percent}%`
             }));
           });
           currentUrls.push(url);
@@ -266,19 +275,66 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
       }
       
       setFormData(prev => ({ ...prev, imageUrls: currentUrls }));
-      setProgress({ active: true, message: 'Assets Buffered', percentage: 100, subMessage: 'Images are ready for cloud commit.' });
+      setProgress({ active: true, message: 'Images Synced', percentage: 100, subMessage: 'Assets ready for cloud commit.' });
       setTimeout(() => setProgress(prev => ({ ...prev, active: false })), 2000);
     } catch (err: any) {
-      setProgress({ 
-        active: true, 
-        message: 'Sync Interrupted', 
-        percentage: 0, 
-        error: err.message,
-        subMessage: 'Check Supabase storage policies or bucket setup.' 
-      });
+      setProgress({ active: true, message: 'Sync Interrupted', percentage: 0, error: err.message });
     } finally {
       setIsUploading(false);
       if (imageInputRef.current) imageInputRef.current.value = '';
+      replaceIndexRef.current = null;
+    }
+  };
+
+  const handleManualVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const isReplacing = replaceIndexRef.current !== null;
+    const currentUrls = [...(formData.videoUrls || [])];
+
+    if (isReplacing) {
+      currentUrls[replaceIndexRef.current!] = URL.createObjectURL(files[0]);
+      setFormData(prev => ({ ...prev, videoUrls: currentUrls }));
+    }
+
+    setIsUploading(true);
+    setProgress({ 
+      active: true, 
+      message: isReplacing ? 'Replacing video...' : `Syncing ${files.length} videos...`, 
+      percentage: 0, 
+      error: null 
+    });
+    
+    try {
+      if (isReplacing) {
+        const file = files[0];
+        const url = await uploadMedia(file, 'videos', (percent) => {
+          setProgress(prev => ({ ...prev, percentage: percent }));
+        });
+        currentUrls[replaceIndexRef.current!] = url;
+      } else {
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          const url = await uploadMedia(file, 'videos', (percent) => {
+            setProgress(prev => ({
+              ...prev,
+              percentage: percent,
+              subMessage: `Syncing video ${i + 1}/${files.length}: ${percent}%`
+            }));
+          });
+          currentUrls.push(url);
+        }
+      }
+      
+      setFormData(prev => ({ ...prev, videoUrls: currentUrls }));
+      setProgress({ active: true, message: 'Videos Synced', percentage: 100, subMessage: 'Assets ready for cloud commit.' });
+      setTimeout(() => setProgress(prev => ({ ...prev, active: false })), 2000);
+    } catch (err: any) {
+      setProgress({ active: true, message: 'Sync Interrupted', percentage: 0, error: err.message });
+    } finally {
+      setIsUploading(false);
+      if (videoInputRef.current) videoInputRef.current.value = '';
       replaceIndexRef.current = null;
     }
   };
@@ -482,61 +538,74 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                   <textarea placeholder="Detailed Narrative" className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-100 text-sm resize-none shadow-inner" rows={4} value={formData.longDescription} onChange={(e) => setFormData({ ...formData, longDescription: e.target.value })} />
                 </div>
 
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center px-1">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Asset Gallery</label>
-                    <button type="button" onClick={() => handleImagePicker()} className="text-[10px] font-black text-sky-600 uppercase underline decoration-2 underline-offset-4">Add Media</button>
-                    <input ref={imageInputRef} type="file" multiple accept="image/*" className="hidden" onChange={handleManualImageUpload} />
+                {/* MEDIA HUB - PHOTOS & VIDEOS */}
+                <div className="space-y-12">
+                  {/* Photo Section */}
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center px-1">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Photo Gallery</label>
+                      <button type="button" onClick={() => handleImagePicker()} className="text-[10px] font-black text-sky-600 uppercase underline decoration-2 underline-offset-4">Add Photos</button>
+                      <input ref={imageInputRef} type="file" multiple accept="image/*" className="hidden" onChange={handleManualImageUpload} />
+                    </div>
+                    <div className="grid grid-cols-4 gap-4 pb-3">
+                      {formData.imageUrls?.map((url, i) => (
+                        <div key={i} className="relative aspect-square shrink-0 group">
+                          <img src={url} className="w-full h-full object-cover rounded-[1.5rem] shadow-md border border-slate-100" />
+                          <div className="absolute top-2 left-2 flex gap-1">
+                             <div className={`px-2 py-0.5 rounded-lg text-[7px] font-black uppercase tracking-widest shadow-sm ${url.startsWith('blob:') ? 'bg-amber-500 text-white animate-pulse' : (url.startsWith('data:') ? 'bg-blue-500 text-white' : 'bg-emerald-500 text-white')}`}>
+                                {url.startsWith('blob:') ? 'Syncing...' : (url.startsWith('data:') ? 'Sandbox' : 'Cloud')}
+                             </div>
+                          </div>
+                          <div className={`absolute inset-0 bg-slate-900/60 transition-opacity rounded-[1.5rem] flex items-center justify-center gap-2 ${url.startsWith('blob:') ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                             {url.startsWith('blob:') ? (
+                                <div className="animate-spin w-6 h-6 border-2 border-white/20 border-t-white rounded-full"></div>
+                             ) : (
+                               <>
+                                 <button type="button" onClick={() => handleImagePicker(i)} className="w-8 h-8 bg-white text-slate-900 rounded-lg flex items-center justify-center text-[10px] hover:bg-sky-500 hover:text-white transition-all"><i className="fa-solid fa-arrows-rotate"></i></button>
+                                 <button type="button" onClick={() => setFormData({ ...formData, imageUrls: formData.imageUrls?.filter((_, idx) => idx !== i) })} className="w-8 h-8 bg-red-500 text-white rounded-lg flex items-center justify-center text-[10px] hover:bg-red-600 transition-all"><i className="fa-solid fa-trash"></i></button>
+                               </>
+                             )}
+                          </div>
+                        </div>
+                      ))}
+                      {(!formData.imageUrls || formData.imageUrls.length < 12) && (
+                        <button type="button" onClick={() => handleImagePicker()} className="aspect-square rounded-[1.5rem] bg-slate-50 border border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-300 hover:bg-slate-100 hover:text-slate-600 transition-all"><i className="fa-solid fa-plus text-xl mb-1"></i><span className="text-[7px] font-black uppercase">Add Photos</span></button>
+                      )}
+                    </div>
                   </div>
-                  <div className="grid grid-cols-4 gap-4 pb-3">
-                    {formData.imageUrls?.map((url, i) => (
-                      <div key={i} className="relative aspect-square shrink-0 group">
-                        <img src={url} className="w-full h-full object-cover rounded-[1.5rem] shadow-md border border-slate-100" />
-                        
-                        {/* Status Overlay */}
-                        <div className="absolute top-2 left-2 flex gap-1">
-                           <div className={`px-2 py-0.5 rounded-lg text-[7px] font-black uppercase tracking-widest shadow-sm ${url.startsWith('blob:') ? 'bg-amber-500 text-white animate-pulse' : (url.startsWith('data:') ? 'bg-blue-500 text-white' : 'bg-emerald-500 text-white')}`}>
-                              {url.startsWith('blob:') ? 'Syncing...' : (url.startsWith('data:') ? 'Sandbox' : 'Cloud')}
-                           </div>
-                        </div>
 
-                        {/* Action Overlay */}
-                        <div className={`absolute inset-0 bg-slate-900/60 transition-opacity rounded-[1.5rem] flex items-center justify-center gap-2 ${url.startsWith('blob:') ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                           {url.startsWith('blob:') ? (
-                              <div className="animate-spin w-6 h-6 border-2 border-white/20 border-t-white rounded-full"></div>
-                           ) : (
-                             <>
-                               <button 
-                                  type="button" 
-                                  onClick={() => handleImagePicker(i)}
-                                  title="Replace"
-                                  className="w-8 h-8 bg-white text-slate-900 rounded-lg flex items-center justify-center text-[10px] shadow-xl hover:bg-sky-500 hover:text-white transition-all"
-                               >
-                                  <i className="fa-solid fa-arrows-rotate"></i>
-                               </button>
-                               <button 
-                                  type="button" 
-                                  onClick={() => setFormData({ ...formData, imageUrls: formData.imageUrls?.filter((_, idx) => idx !== i) })}
-                                  title="Delete"
-                                  className="w-8 h-8 bg-red-500 text-white rounded-lg flex items-center justify-center text-[10px] shadow-xl hover:bg-red-600 transition-all"
-                                >
-                                  <i className="fa-solid fa-trash"></i>
-                               </button>
-                             </>
-                           )}
+                  {/* Video Section */}
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center px-1">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Cinematic Walkthroughs</label>
+                      <button type="button" onClick={() => handleVideoPicker()} className="text-[10px] font-black text-sky-600 uppercase underline decoration-2 underline-offset-4">Add Videos</button>
+                      <input ref={videoInputRef} type="file" multiple accept="video/*" className="hidden" onChange={handleManualVideoUpload} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 pb-3">
+                      {formData.videoUrls?.map((url, i) => (
+                        <div key={i} className="relative aspect-video shrink-0 group">
+                          <video src={url} className="w-full h-full object-cover rounded-[1.5rem] shadow-md border border-slate-100" />
+                          <div className="absolute top-2 left-2 flex gap-1">
+                             <div className={`px-2 py-0.5 rounded-lg text-[7px] font-black uppercase tracking-widest shadow-sm ${url.startsWith('blob:') ? 'bg-amber-500 text-white animate-pulse' : (url.startsWith('data:') ? 'bg-blue-500 text-white' : 'bg-emerald-500 text-white')}`}>
+                                {url.startsWith('blob:') ? 'Syncing...' : (url.startsWith('data:') ? 'Sandbox' : 'Cloud')}
+                             </div>
+                          </div>
+                          <div className={`absolute inset-0 bg-slate-900/60 transition-opacity rounded-[1.5rem] flex items-center justify-center gap-2 ${url.startsWith('blob:') ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                             {url.startsWith('blob:') ? (
+                                <div className="animate-spin w-6 h-6 border-2 border-white/20 border-t-white rounded-full"></div>
+                             ) : (
+                               <>
+                                 <button type="button" onClick={() => handleVideoPicker(i)} className="w-10 h-10 bg-white text-slate-900 rounded-lg flex items-center justify-center text-[12px] hover:bg-sky-500 hover:text-white transition-all"><i className="fa-solid fa-arrows-rotate"></i></button>
+                                 <button type="button" onClick={() => setFormData({ ...formData, videoUrls: formData.videoUrls?.filter((_, idx) => idx !== i) })} className="w-10 h-10 bg-red-500 text-white rounded-lg flex items-center justify-center text-[12px] hover:bg-red-600 transition-all"><i className="fa-solid fa-trash"></i></button>
+                               </>
+                             )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                    {(!formData.imageUrls || formData.imageUrls.length < 12) && (
-                      <button 
-                        type="button"
-                        onClick={() => handleImagePicker()}
-                        className="aspect-square rounded-[1.5rem] bg-slate-50 border border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-300 hover:bg-slate-100 hover:text-slate-600 transition-all"
-                      >
-                        <i className="fa-solid fa-plus text-xl mb-1"></i>
-                        <span className="text-[7px] font-black uppercase">Add More</span>
-                      </button>
-                    )}
+                      ))}
+                      {(!formData.videoUrls || formData.videoUrls.length < 4) && (
+                        <button type="button" onClick={() => handleVideoPicker()} className="aspect-video rounded-[1.5rem] bg-slate-50 border border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-300 hover:bg-slate-100 hover:text-slate-600 transition-all"><i className="fa-solid fa-video text-xl mb-1"></i><span className="text-[7px] font-black uppercase">Add Videos</span></button>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -546,7 +615,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                   className="w-full bg-slate-900 text-white font-black py-6 rounded-2xl uppercase text-[10px] tracking-widest shadow-xl active:scale-[0.98] transition-transform flex items-center justify-center gap-3 disabled:opacity-50"
                 >
                   <i className={`fa-solid ${isSyncing ? 'fa-spinner animate-spin' : 'fa-cloud-arrow-up'}`}></i>
-                  {isSyncing ? 'Committing Changes...' : (isUploading ? 'Syncing Media...' : 'Commit to Cloud')}
+                  {isSyncing ? 'Committing Changes...' : (isUploading ? 'Waiting for Uploads...' : 'Commit to Cloud')}
                 </button>
               </form>
             </div>
@@ -738,21 +807,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                              </span>
                           </div>
                        </div>
-                       {!cloudStatus.db || !cloudStatus.storage ? (
-                          <div className="mt-6 p-4 bg-amber-50 rounded-2xl border border-amber-100 flex items-start gap-3">
-                             <i className="fa-solid fa-circle-exclamation text-amber-500 mt-1"></i>
-                             <p className="text-[10px] font-medium text-amber-700 leading-relaxed">
-                                Connection issues detected. Please check your Supabase console or re-run the setup SQL script found in the "Inventory" commit log.
-                             </p>
-                          </div>
-                       ) : (
-                          <div className="mt-6 p-4 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-start gap-3">
-                             <i className="fa-solid fa-circle-check text-emerald-500 mt-1"></i>
-                             <p className="text-[10px] font-medium text-emerald-700 leading-relaxed">
-                                All systems operational. Your images and villa data are syncing globally across the Peak Stay network.
-                             </p>
-                          </div>
-                       )}
                     </div>
                  </div>
 
@@ -779,7 +833,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
               </div>
 
               <div className="space-y-12">
-                 {/* Contact Details Management */}
                  <div className="bg-slate-50/50 p-8 rounded-[3rem] border border-slate-100 space-y-8">
                     <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] block mb-2 flex items-center gap-3">
                        <i className="fa-solid fa-address-book text-emerald-500 text-lg"></i>
