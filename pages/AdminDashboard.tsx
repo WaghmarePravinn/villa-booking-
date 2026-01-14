@@ -226,14 +226,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
     if (!files || files.length === 0) return;
 
     const isReplacing = replaceIndexRef.current !== null;
+    const currentUrls = [...(formData.imageUrls || [])];
+
+    // Optimistically show a placeholder if replacing
+    if (isReplacing) {
+      currentUrls[replaceIndexRef.current!] = URL.createObjectURL(files[0]);
+      setFormData(prev => ({ ...prev, imageUrls: currentUrls }));
+    }
+
     setProgress({ 
       active: true, 
       message: isReplacing ? 'Replacing asset...' : `Preparing ${files.length} assets...`, 
       percentage: 0, 
       error: null 
     });
-
-    const currentUrls = [...(formData.imageUrls || [])];
     
     try {
       if (isReplacing) {
@@ -486,7 +492,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                         {/* Status Overlay */}
                         <div className="absolute top-2 left-2 flex gap-1">
                            <div className={`px-2 py-0.5 rounded-lg text-[7px] font-black uppercase tracking-widest shadow-sm ${url.startsWith('blob:') ? 'bg-amber-500 text-white animate-pulse' : 'bg-emerald-500 text-white'}`}>
-                              {url.startsWith('blob:') ? 'Local' : 'Cloud'}
+                              {url.startsWith('blob:') ? 'Syncing...' : 'Cloud'}
                            </div>
                         </div>
 
@@ -511,7 +517,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                         </div>
                       </div>
                     ))}
-                    {(!formData.imageUrls || formData.imageUrls.length < 8) && (
+                    {(!formData.imageUrls || formData.imageUrls.length < 12) && (
                       <button 
                         type="button"
                         onClick={() => handleImagePicker()}
