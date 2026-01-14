@@ -40,7 +40,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
   const [promoText, setPromoText] = useState(settings.promoText);
   const [activeTheme, setActiveTheme] = useState(settings.activeTheme);
   
-  // New state for deletion confirmation
+  // State for deletion confirmation
   const [villaToDelete, setVillaToDelete] = useState<Villa | null>(null);
 
   const [progress, setProgress] = useState<ProgressState>({
@@ -457,7 +457,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                 <div key={v.id} className="bg-white p-8 rounded-[3rem] border border-slate-100 flex gap-8 group hover:shadow-2xl transition-all duration-500 relative overflow-hidden shadow-sm">
                   {v.isFeatured && <div className="absolute top-0 right-0 bg-orange-500 text-white text-[8px] font-black uppercase px-6 py-1.5 rounded-bl-[1.5rem] shadow-sm tracking-widest">Featured</div>}
                   <div className="w-28 h-28 rounded-3xl overflow-hidden shadow-inner bg-slate-50 shrink-0">
-                    <img src={v.imageUrls?.[0] || 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80&w=400'} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+                    <img 
+                      src={v.imageUrls?.[0] || 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80&w=400'} 
+                      className="w-full h-full object-cover transition-transform group-hover:scale-110" 
+                      alt={v.name}
+                    />
                   </div>
                   <div className="flex-grow min-w-0 flex flex-col justify-center">
                     <h3 className="font-bold text-slate-900 text-xl truncate mb-1">{v.name}</h3>

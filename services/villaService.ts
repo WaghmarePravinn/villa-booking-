@@ -38,32 +38,50 @@ const getLocalVillas = (): Villa[] => {
 
 const saveLocalVillas = (villas: Villa[]) => {
   localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(villas));
-  // Dispatch custom event for same-tab updates
   window.dispatchEvent(new CustomEvent(UPDATE_EVENT, { detail: villas }));
 };
 
-const mapFromDb = (v: any): Villa => ({
-  id: v.id,
-  name: v.name || "Unnamed Property",
-  location: v.location || "Unknown Location",
-  pricePerNight: Number(v.price_per_night ?? v.pricePerNight ?? 0),
-  bedrooms: Number(v.bedrooms ?? 0),
-  bathrooms: Number(v.bathrooms ?? 0),
-  capacity: Number(v.capacity ?? 0),
-  description: v.description || "",
-  longDescription: v.long_description || v.longDescription || "",
-  imageUrls: Array.isArray(v.image_urls) ? v.image_urls : (v.image_url ? [v.image_url] : []),
-  videoUrls: Array.isArray(v.video_urls) ? v.video_urls : (v.video_url ? [v.video_url] : []),
-  amenities: Array.isArray(v.amenities) ? v.amenities : [],
-  includedServices: Array.isArray(v.included_services) ? v.included_services : [],
-  isFeatured: Boolean(v.is_featured ?? v.isFeatured ?? false),
-  rating: Number(v.rating ?? 5),
-  ratingCount: Number(v.rating_count ?? v.ratingCount ?? 0),
-  numRooms: Number(v.num_rooms ?? v.numRooms ?? v.bedrooms ?? 0),
-  mealsAvailable: Boolean(v.meals_available ?? v.mealsAvailable ?? false),
-  petFriendly: Boolean(v.pet_friendly ?? v.petFriendly ?? false),
-  refundPolicy: v.refund_policy || v.refundPolicy || ""
-});
+const mapFromDb = (v: any): Villa => {
+  // Ensure imageUrls is always an array, even if DB returns a single string or null
+  let imageUrls: string[] = [];
+  if (Array.isArray(v.image_urls)) {
+    imageUrls = v.image_urls;
+  } else if (v.image_urls && typeof v.image_urls === 'string') {
+    imageUrls = [v.image_urls];
+  } else if (v.image_url) {
+    imageUrls = [v.image_url];
+  }
+
+  let videoUrls: string[] = [];
+  if (Array.isArray(v.video_urls)) {
+    videoUrls = v.video_urls;
+  } else if (v.video_url) {
+    videoUrls = [v.video_url];
+  }
+
+  return {
+    id: v.id,
+    name: v.name || "Unnamed Property",
+    location: v.location || "Unknown Location",
+    pricePerNight: Number(v.price_per_night ?? v.pricePerNight ?? 0),
+    bedrooms: Number(v.bedrooms ?? 0),
+    bathrooms: Number(v.bathrooms ?? 0),
+    capacity: Number(v.capacity ?? 0),
+    description: v.description || "",
+    longDescription: v.long_description || v.longDescription || "",
+    imageUrls: imageUrls,
+    videoUrls: videoUrls,
+    amenities: Array.isArray(v.amenities) ? v.amenities : [],
+    includedServices: Array.isArray(v.included_services) ? v.included_services : [],
+    isFeatured: Boolean(v.is_featured ?? v.isFeatured ?? false),
+    rating: Number(v.rating ?? 5),
+    ratingCount: Number(v.rating_count ?? v.ratingCount ?? 0),
+    numRooms: Number(v.num_rooms ?? v.numRooms ?? v.bedrooms ?? 0),
+    mealsAvailable: Boolean(v.meals_available ?? v.mealsAvailable ?? false),
+    petFriendly: Boolean(v.pet_friendly ?? v.petFriendly ?? false),
+    refundPolicy: v.refund_policy || v.refundPolicy || ""
+  };
+};
 
 const mapToDb = (v: Partial<Villa>) => {
   const payload: any = {};
@@ -75,8 +93,16 @@ const mapToDb = (v: Partial<Villa>) => {
   if (v.capacity !== undefined) payload.capacity = Number(v.capacity);
   if (v.description !== undefined) payload.description = v.description;
   if (v.longDescription !== undefined) payload.long_description = v.longDescription;
-  if (v.imageUrls !== undefined) payload.image_urls = v.imageUrls;
-  if (v.videoUrls !== undefined) payload.video_urls = v.videoUrls;
+  
+  // Clean URLs before saving to DB - remove local blobs if they accidentally leaked in
+  if (v.imageUrls !== undefined) {
+    payload.image_urls = v.imageUrls.filter(url => !url.startsWith('blob:'));
+  }
+  
+  if (v.videoUrls !== undefined) {
+    payload.video_urls = v.videoUrls.filter(url => !url.startsWith('blob:'));
+  }
+  
   if (v.amenities !== undefined) payload.amenities = v.amenities;
   if (v.includedServices !== undefined) payload.included_services = v.includedServices;
   if (v.isFeatured !== undefined) payload.is_featured = Boolean(v.isFeatured);
@@ -186,17 +212,15 @@ export const uploadMedia = async (file: File, folder: 'images' | 'videos', onPro
   try {
     const { error } = await supabase.storage.from('villa-media').upload(filePath, file);
     if (error) {
-       console.warn("Supabase Upload Failed, falling back to local ObjectURL", error);
-       if (onProgress) onProgress(100);
-       return URL.createObjectURL(file);
+       // Stop returning blob URLs to the cloud. Instead, throw a proper storage error.
+       throw handleDbError(error, 'storage');
     }
     
     if (onProgress) onProgress(100);
     const { data: { publicUrl } } = supabase.storage.from('villa-media').getPublicUrl(filePath);
     return publicUrl;
-  } catch (err) {
+  } catch (err: any) {
     console.error("Storage Error:", err);
-    if (onProgress) onProgress(100);
-    return URL.createObjectURL(file);
+    throw err; // Re-throw so AdminDashboard can catch and show the error modal
   }
 };
