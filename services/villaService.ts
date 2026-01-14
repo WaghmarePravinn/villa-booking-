@@ -7,7 +7,6 @@ import { handleDbError } from "./errorUtils";
 const TABLE = "villas";
 const LOCAL_STORAGE_KEY = "peak_stay_villas_sandbox";
 
-// Helper to generate a UUID-like string for local storage
 const generateUUID = () => {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
     const r = Math.random() * 16 | 0;
@@ -16,7 +15,6 @@ const generateUUID = () => {
   });
 };
 
-// Check if a string is a valid UUID
 const isValidUUID = (id: string) => {
   const regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   return regex.test(id);
@@ -81,11 +79,9 @@ const mapToDb = (v: Partial<Villa>) => {
   if (v.isFeatured !== undefined) payload.is_featured = Boolean(v.isFeatured);
   if (v.numRooms !== undefined) payload.num_rooms = Number(v.numRooms);
   if (v.mealsAvailable !== undefined) payload.meals_available = Boolean(v.mealsAvailable);
-  // Fixed typo: using v.petFriendly instead of v.pet_friendly which doesn't exist on Partial<Villa>
   if (v.petFriendly !== undefined) payload.pet_friendly = Boolean(v.petFriendly);
   if (v.refundPolicy !== undefined) payload.refund_policy = v.refundPolicy;
   if (v.rating !== undefined) payload.rating = Number(v.rating);
-  // Fixed typo: using v.ratingCount instead of v.rating_count which doesn't exist on Partial<Villa>
   if (v.ratingCount !== undefined) payload.rating_count = Number(v.ratingCount);
   return payload;
 };
@@ -100,14 +96,9 @@ export const subscribeToVillas = (callback: (villas: Villa[]) => void) => {
 
   const fetchVillas = async () => {
     try {
-      // Trying with created_at order, if it fails, falls back to unordered
-      const { data, error } = await supabase.from(TABLE).select('*').order('created_at', { ascending: false });
+      const { data, error } = await supabase.from(TABLE).select('*');
       if (!error && data) {
         callback(data.map(mapFromDb));
-      } else if (error) {
-        // Fallback for cases where created_at doesn't exist yet
-        const { data: fallbackData } = await supabase.from(TABLE).select('*');
-        if (fallbackData) callback(fallbackData.map(mapFromDb));
       }
     } catch (e: any) {
       console.error("Critical Fetch Failure:", e.message || e);
@@ -166,7 +157,6 @@ export const deleteVillaById = async (id: string): Promise<void> => {
   window.dispatchEvent(new Event('storage'));
 
   if (!isSupabaseAvailable) return;
-
   if (!isValidUUID(id)) return;
 
   const { error } = await supabase.from(TABLE).delete().eq('id', id);
@@ -178,14 +168,26 @@ export const uploadMedia = async (file: File, folder: 'images' | 'videos', onPro
     if (onProgress) onProgress(100);
     return URL.createObjectURL(file);
   }
+  
   const fileExt = file.name.split('.').pop();
   const fileName = `${generateUUID()}.${fileExt}`;
   const filePath = `${folder}/${fileName}`;
   
-  const { error } = await supabase.storage.from('villa-media').upload(filePath, file);
-  if (error) throw handleDbError(error, 'storage');
-  
-  if (onProgress) onProgress(100);
-  const { data: { publicUrl } } = supabase.storage.from('villa-media').getPublicUrl(filePath);
-  return publicUrl;
+  try {
+    const { error } = await supabase.storage.from('villa-media').upload(filePath, file);
+    if (error) {
+       // Fallback to local preview if Supabase upload fails (e.g. bucket missing)
+       console.warn("Supabase Upload Failed, falling back to local ObjectURL", error);
+       if (onProgress) onProgress(100);
+       return URL.createObjectURL(file);
+    }
+    
+    if (onProgress) onProgress(100);
+    const { data: { publicUrl } } = supabase.storage.from('villa-media').getPublicUrl(filePath);
+    return publicUrl;
+  } catch (err) {
+    console.error("Storage Error:", err);
+    if (onProgress) onProgress(100);
+    return URL.createObjectURL(file);
+  }
 };

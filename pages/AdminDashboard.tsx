@@ -36,7 +36,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
   const [magicPrompt, setMagicPrompt] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
   
-  // Local state for settings to avoid jitter
   const [promoText, setPromoText] = useState(settings.promoText);
   const [activeTheme, setActiveTheme] = useState(settings.activeTheme);
 
@@ -48,28 +47,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
     error: null
   });
   
-  const [showSuccessModal, setShowSuccessModal] = useState<{ show: boolean, type: string | null }>({ show: false, type: null });
-  const [managedReviews, setManagedReviews] = useState<Testimonial[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [managedServices, setManagedServices] = useState<Service[]>([]);
-  
-  const [serviceFormData, setServiceFormData] = useState<Partial<Service>>({ title: '', description: '', icon: 'fa-concierge-bell' });
-  const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
-
   const imageInputRef = useRef<HTMLInputElement>(null);
   
   useEffect(() => {
     const unsubLeads = subscribeToLeads(setLeads);
-    const unsubReviews = subscribeToTestimonials(setManagedReviews);
-    const unsubServices = subscribeToServices(setManagedServices);
-    return () => {
-      unsubLeads();
-      unsubReviews();
-      unsubServices();
-    };
+    return () => unsubLeads();
   }, []);
 
-  // Sync local state when settings prop changes (from external updates)
   useEffect(() => {
     setPromoText(settings.promoText);
     setActiveTheme(settings.activeTheme);
@@ -139,14 +124,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
     try {
       if (isEditing) {
         await onUpdateVilla(formData as Villa);
-        setShowSuccessModal({ show: true, type: 'Property Synced' });
       } else {
         await onAddVilla(formData as Villa);
-        setShowSuccessModal({ show: true, type: 'Property Published' });
       }
       resetForm();
     } catch (err: any) {
-      setProgress({ active: true, message: 'Sync Error', percentage: 0, error: err.message });
+      setProgress({ 
+        active: true, 
+        message: 'Security Interrupted', 
+        percentage: 0, 
+        error: err.message,
+        subMessage: 'Database permissions or project config blocked the request.' 
+      });
     } finally {
       setIsSyncing(false);
     }
@@ -175,7 +164,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
       setProgress({ active: true, message: 'Assets Committed', percentage: 100, subMessage: 'Gallery updated successfully.' });
       setTimeout(() => setProgress(prev => ({ ...prev, active: false })), 2000);
     } catch (err: any) {
-      setProgress({ active: true, message: 'Upload Interrupted', percentage: 0, error: err.message });
+      setProgress({ 
+        active: true, 
+        message: 'Upload Interrupted', 
+        percentage: 0, 
+        error: err.message,
+        subMessage: 'Storage Bucket might be missing or private.' 
+      });
     } finally {
       if (imageInputRef.current) imageInputRef.current.value = '';
     }
@@ -186,15 +181,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
       await updateLeadStatus(id, status);
     } catch (err: any) {
       alert(err.message);
-    }
-  };
-
-  const getStatusColor = (status: Lead['status']) => {
-    switch (status) {
-      case 'booked': return 'bg-emerald-500';
-      case 'contacted': return 'bg-sky-500';
-      case 'lost': return 'bg-red-400';
-      default: return 'bg-amber-500';
     }
   };
 
@@ -242,7 +228,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
 
   return (
     <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fade overflow-hidden h-full">
-      {/* GLOBAL COMMIT PROGRESS */}
+      {/* GLOBAL COMMIT PROGRESS / ERROR FEEDBACK */}
       {progress.active && (
         <div className={`fixed top-32 right-8 z-[2000] ${progress.error ? 'w-[450px]' : 'w-80'} bg-slate-100 text-slate-900 p-8 rounded-[2rem] shadow-2xl animate-reveal border border-slate-200 max-h-[80vh] overflow-y-auto`}>
           <div className="flex items-center justify-between mb-4">
@@ -252,9 +238,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
               </div>
               <div>
                 <p className={`text-[10px] font-black uppercase tracking-widest ${progress.error ? 'text-red-600' : 'text-slate-600'}`}>
-                  {progress.error ? 'Security Interrupted' : 'Instant Sync'}
+                  {progress.message}
                 </p>
-                <h4 className="text-sm font-bold truncate">{progress.message}</h4>
+                <h4 className="text-sm font-bold truncate">{progress.error ? 'Error Detected' : 'Instant Sync'}</h4>
               </div>
             </div>
             {progress.error && (
@@ -268,7 +254,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                <div className="h-full bg-slate-900 transition-all duration-300" style={{ width: `${progress.percentage}%` }}></div>
             </div>
           )}
-          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{progress.subMessage}</p>
+          {progress.error ? (
+            <div className="bg-white p-4 rounded-xl border border-red-100 shadow-inner mt-4">
+               <pre className="text-[10px] font-mono text-red-600 whitespace-pre-wrap leading-relaxed max-h-40 overflow-y-auto">
+                 {progress.error}
+               </pre>
+            </div>
+          ) : (
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{progress.subMessage}</p>
+          )}
         </div>
       )}
 
@@ -284,7 +278,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
            </div>
         </div>
         <div className="bg-slate-100 p-1.5 rounded-2xl flex gap-1 overflow-x-auto max-w-full shadow-inner">
-          {['inventory', 'inquiries', 'services', 'reviews', 'branding'].map(tab => (
+          {['inventory', 'inquiries', 'branding'].map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab as AdminTab)} className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === tab ? 'bg-white text-slate-900 shadow-md scale-105' : 'text-slate-400 hover:text-slate-600'}`}>
               {tab}
             </button>
@@ -378,7 +372,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
             {leads.map(lead => (
               <div key={lead.id} className="bg-slate-50/50 p-8 rounded-[2.5rem] border border-slate-100 flex justify-between items-center gap-6">
                 <div className="flex items-center gap-6">
-                   <div className={`w-3 h-3 rounded-full ${getStatusColor(lead.status)} shadow-lg`}></div>
+                   <div className={`w-3 h-3 rounded-full bg-amber-500 shadow-lg`}></div>
                    <div>
                      <h3 className="text-xl font-bold text-slate-900">{lead.villaName}</h3>
                      <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mt-1">
@@ -452,31 +446,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                           disabled={isSyncingBroadcast}
                           className="px-10 py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase shadow-lg hover:bg-black transition-all flex items-center gap-2 disabled:opacity-50"
                        >
-                          {isSyncingBroadcast ? (
-                            <>
-                              <i className="fa-solid fa-circle-notch animate-spin"></i>
-                              Syncing...
-                            </>
-                          ) : 'Update Broadcast'}
+                          {isSyncingBroadcast ? 'Syncing...' : 'Update Broadcast'}
                        </button>
-                    </div>
-                 </div>
-
-                 <div className="pt-8 border-t border-slate-200">
-                    <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.3em] mb-4">Live Preview</h4>
-                    <div className="w-full h-12 bg-slate-900 text-white flex items-center justify-center rounded-2xl overflow-hidden px-10">
-                       <p className="text-[10px] font-black uppercase tracking-widest animate-pulse truncate">{promoText}</p>
                     </div>
                  </div>
               </div>
            </div>
-        </div>
-      )}
-      
-      {/* Testimonials and Services tabs remain as implemented in the previous turn */}
-      {(activeTab === 'reviews' || activeTab === 'services') && (
-        <div className="p-12 text-center text-slate-400 uppercase text-[10px] font-black tracking-widest">
-           Section Loaded: {activeTab}
         </div>
       )}
     </div>
