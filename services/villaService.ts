@@ -17,7 +17,7 @@ const generateUUID = () => {
 };
 
 const isValidUUID = (id: string) => {
-  const regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   return regex.test(id);
 };
 
@@ -42,7 +42,6 @@ const saveLocalVillas = (villas: Villa[]) => {
 };
 
 const mapFromDb = (v: any): Villa => {
-  // Ensure imageUrls is always an array, even if DB returns a single string or null
   let imageUrls: string[] = [];
   if (Array.isArray(v.image_urls)) {
     imageUrls = v.image_urls;
@@ -94,7 +93,6 @@ const mapToDb = (v: Partial<Villa>) => {
   if (v.description !== undefined) payload.description = v.description;
   if (v.longDescription !== undefined) payload.long_description = v.longDescription;
   
-  // Clean URLs before saving to DB - remove local blobs if they accidentally leaked in
   if (v.imageUrls !== undefined) {
     payload.image_urls = v.imageUrls.filter(url => !url.startsWith('blob:'));
   }
@@ -118,13 +116,10 @@ const mapToDb = (v: Partial<Villa>) => {
 export const subscribeToVillas = (callback: (villas: Villa[]) => void) => {
   if (!isSupabaseAvailable) {
     callback(getLocalVillas());
-    
     const handleUpdate = (e: any) => callback(e.detail || getLocalVillas());
     const handleStorage = () => callback(getLocalVillas());
-    
     window.addEventListener(UPDATE_EVENT, handleUpdate);
     window.addEventListener('storage', handleStorage);
-    
     return () => {
       window.removeEventListener(UPDATE_EVENT, handleUpdate);
       window.removeEventListener('storage', handleStorage);
@@ -177,9 +172,7 @@ export const updateVillaById = async (id: string, villa: Partial<Villa>): Promis
     return;
   }
   
-  if (!isValidUUID(id)) {
-    throw new Error(`The ID "${id}" is not a valid UUID.`);
-  }
+  if (!isValidUUID(id)) throw new Error(`The ID "${id}" is not a valid UUID.`);
 
   const payload = mapToDb(villa);
   const { error } = await supabase.from(TABLE).update(payload).eq('id', id);
@@ -192,9 +185,7 @@ export const deleteVillaById = async (id: string): Promise<void> => {
     saveLocalVillas(localVillas.filter(v => v.id !== id));
     return;
   }
-  
   if (!isValidUUID(id)) return;
-
   const { error } = await supabase.from(TABLE).delete().eq('id', id);
   if (error) throw handleDbError(error, TABLE);
 };
@@ -211,16 +202,48 @@ export const uploadMedia = async (file: File, folder: 'images' | 'videos', onPro
   
   try {
     const { error } = await supabase.storage.from('villa-media').upload(filePath, file);
-    if (error) {
-       // Stop returning blob URLs to the cloud. Instead, throw a proper storage error.
-       throw handleDbError(error, 'storage');
-    }
+    if (error) throw handleDbError(error, 'storage');
     
     if (onProgress) onProgress(100);
     const { data: { publicUrl } } = supabase.storage.from('villa-media').getPublicUrl(filePath);
     return publicUrl;
   } catch (err: any) {
     console.error("Storage Error:", err);
-    throw err; // Re-throw so AdminDashboard can catch and show the error modal
+    throw err;
   }
+};
+
+/**
+ * Checks the system integrity for Database and Storage
+ */
+export const verifyCloudConnectivity = async () => {
+  // Fix: Return a consistent return structure to resolve TypeScript union errors in AdminDashboard.tsx
+  if (!isSupabaseAvailable) return { 
+    db: false, 
+    storage: false, 
+    dbError: 'Supabase Key Missing', 
+    storageError: 'Supabase Key Missing' 
+  };
+  
+  const results = { db: false, storage: false, dbError: null as any, storageError: null as any };
+  
+  // 1. Check DB
+  try {
+    const { error } = await supabase.from(TABLE).select('id', { count: 'exact', head: true });
+    if (error) throw error;
+    results.db = true;
+  } catch (e: any) {
+    results.dbError = e.message;
+  }
+  
+  // 2. Check Storage
+  try {
+    const { data, error } = await supabase.storage.getBucket('villa-media');
+    if (error) throw error;
+    results.storage = !!data;
+  } catch (e: any) {
+    results.storageError = e.message;
+  }
+  
+  return results;
 };

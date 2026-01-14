@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Villa, Testimonial, Lead, AppTheme, SiteSettings, Service } from '../types';
 import { generateVillaFromPrompt, generateVillaDescription } from '../services/geminiService';
-import { uploadMedia } from '../services/villaService';
+import { uploadMedia, verifyCloudConnectivity } from '../services/villaService';
 import { updateSettings } from '../services/settingsService';
 import { subscribeToLeads, updateLeadStatus, deleteLead } from '../services/leadService';
 import { subscribeToTestimonials, deleteTestimonial, addTestimonial } from '../services/testimonialService';
@@ -44,6 +44,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
   const [activeTheme, setActiveTheme] = useState(settings.activeTheme);
   
   const [villaToDelete, setVillaToDelete] = useState<Villa | null>(null);
+  const [cloudStatus, setCloudStatus] = useState<{db: boolean, storage: boolean, loading: boolean}>({
+    db: false, storage: false, loading: false
+  });
 
   const [progress, setProgress] = useState<ProgressState>({
     active: false,
@@ -57,17 +60,28 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const replaceIndexRef = useRef<number | null>(null);
   
   useEffect(() => {
     const unsubLeads = subscribeToLeads(setLeads);
     const unsubTestimonials = subscribeToTestimonials(setTestimonials);
     const unsubServices = subscribeToServices(setServices);
+    checkCloud();
     return () => {
       unsubLeads();
       unsubTestimonials();
       unsubServices();
     };
   }, []);
+
+  const checkCloud = async () => {
+    setCloudStatus(prev => ({ ...prev, loading: true }));
+    const result = await verifyCloudConnectivity();
+    setCloudStatus({ db: !!result.db, storage: !!result.storage, loading: false });
+    if (result.dbError || result.storageError) {
+       console.error("Cloud Diagnostics:", result);
+    }
+  };
 
   useEffect(() => {
     setPromoText(settings.promoText);
@@ -152,6 +166,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
     setIsEditing(false);
     setMagicPrompt('');
     if (imageInputRef.current) imageInputRef.current.value = '';
+    replaceIndexRef.current = null;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -201,26 +216,47 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
     }
   };
 
+  const handleImagePicker = (index?: number) => {
+    replaceIndexRef.current = index !== undefined ? index : null;
+    imageInputRef.current?.click();
+  };
+
   const handleManualImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    setProgress({ active: true, message: `Preparing ${files.length} assets...`, percentage: 0, error: null });
-    const uploadedUrls: string[] = [...(formData.imageUrls || [])];
+    const isReplacing = replaceIndexRef.current !== null;
+    setProgress({ 
+      active: true, 
+      message: isReplacing ? 'Replacing asset...' : `Preparing ${files.length} assets...`, 
+      percentage: 0, 
+      error: null 
+    });
+
+    const currentUrls = [...(formData.imageUrls || [])];
     
     try {
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
+      if (isReplacing) {
+        const file = files[0];
         const url = await uploadMedia(file, 'images', (percent) => {
-          setProgress(prev => ({
-            ...prev,
-            percentage: percent,
-            subMessage: `Committing asset ${i + 1}/${files.length}: ${percent}%`
-          }));
+          setProgress(prev => ({ ...prev, percentage: percent }));
         });
-        uploadedUrls.push(url);
+        currentUrls[replaceIndexRef.current!] = url;
+      } else {
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          const url = await uploadMedia(file, 'images', (percent) => {
+            setProgress(prev => ({
+              ...prev,
+              percentage: percent,
+              subMessage: `Committing asset ${i + 1}/${files.length}: ${percent}%`
+            }));
+          });
+          currentUrls.push(url);
+        }
       }
-      setFormData(prev => ({ ...prev, imageUrls: uploadedUrls }));
+      
+      setFormData(prev => ({ ...prev, imageUrls: currentUrls }));
       setProgress({ active: true, message: 'Assets Buffered', percentage: 100, subMessage: 'Images are ready for live reflection.' });
       setTimeout(() => setProgress(prev => ({ ...prev, active: false })), 2500);
     } catch (err: any) {
@@ -233,6 +269,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
       });
     } finally {
       if (imageInputRef.current) imageInputRef.current.value = '';
+      replaceIndexRef.current = null;
     }
   };
 
@@ -364,10 +401,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
       <div className="flex flex-col md:flex-row justify-between items-center mb-12 gap-8 shrink-0">
         <div>
            <h1 className="text-4xl font-bold font-serif text-slate-900">Admin Control Center</h1>
-           <div className="flex items-center gap-3 mt-3">
-             <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[9px] font-black uppercase tracking-widest">
-                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                Status: {isSyncing ? 'Committing...' : 'Real-time'}
+           <div className="flex items-center gap-4 mt-3">
+             <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[9px] font-black uppercase tracking-widest border border-emerald-100">
+                <span className={`w-1.5 h-1.5 rounded-full ${cloudStatus.db ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></span>
+                PostgreSQL: {cloudStatus.db ? 'Connected' : 'Offline'}
+             </div>
+             <div className="flex items-center gap-2 px-3 py-1 bg-sky-50 text-sky-600 rounded-full text-[9px] font-black uppercase tracking-widest border border-sky-100">
+                <span className={`w-1.5 h-1.5 rounded-full ${cloudStatus.storage ? 'bg-sky-500 animate-pulse' : 'bg-red-500'}`}></span>
+                Storage: {cloudStatus.storage ? 'Synced' : 'Config Error'}
              </div>
            </div>
         </div>
@@ -434,21 +475,51 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                 <div className="space-y-4">
                   <div className="flex justify-between items-center px-1">
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Asset Gallery</label>
-                    <button type="button" onClick={() => imageInputRef.current?.click()} className="text-[10px] font-black text-sky-600 uppercase underline decoration-2 underline-offset-4">Add Media</button>
+                    <button type="button" onClick={() => handleImagePicker()} className="text-[10px] font-black text-sky-600 uppercase underline decoration-2 underline-offset-4">Add Media</button>
                     <input ref={imageInputRef} type="file" multiple accept="image/*" className="hidden" onChange={handleManualImageUpload} />
                   </div>
-                  <div className="flex overflow-x-auto gap-3 pb-3 no-scrollbar">
+                  <div className="grid grid-cols-4 gap-4 pb-3">
                     {formData.imageUrls?.map((url, i) => (
-                      <div key={i} className="relative w-24 h-24 shrink-0 group">
+                      <div key={i} className="relative aspect-square shrink-0 group">
                         <img src={url} className="w-full h-full object-cover rounded-[1.5rem] shadow-md border border-slate-100" />
-                        <button type="button" onClick={() => setFormData({ ...formData, imageUrls: formData.imageUrls?.filter((_, idx) => idx !== i) })} className="absolute -top-2 -right-2 bg-red-500 text-white w-6 h-6 rounded-full text-[10px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center shadow-lg"><i className="fa-solid fa-xmark"></i></button>
+                        
+                        {/* Status Overlay */}
+                        <div className="absolute top-2 left-2 flex gap-1">
+                           <div className={`px-2 py-0.5 rounded-lg text-[7px] font-black uppercase tracking-widest shadow-sm ${url.startsWith('blob:') ? 'bg-amber-500 text-white animate-pulse' : 'bg-emerald-500 text-white'}`}>
+                              {url.startsWith('blob:') ? 'Local' : 'Cloud'}
+                           </div>
+                        </div>
+
+                        {/* Action Overlay */}
+                        <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-[1.5rem] flex items-center justify-center gap-2">
+                           <button 
+                              type="button" 
+                              onClick={() => handleImagePicker(i)}
+                              title="Replace"
+                              className="w-8 h-8 bg-white text-slate-900 rounded-lg flex items-center justify-center text-[10px] shadow-xl hover:bg-sky-500 hover:text-white transition-all"
+                           >
+                              <i className="fa-solid fa-arrows-rotate"></i>
+                           </button>
+                           <button 
+                              type="button" 
+                              onClick={() => setFormData({ ...formData, imageUrls: formData.imageUrls?.filter((_, idx) => idx !== i) })}
+                              title="Delete"
+                              className="w-8 h-8 bg-red-500 text-white rounded-lg flex items-center justify-center text-[10px] shadow-xl hover:bg-red-600 transition-all"
+                           >
+                              <i className="fa-solid fa-trash"></i>
+                           </button>
+                        </div>
                       </div>
                     ))}
-                    {(!formData.imageUrls || formData.imageUrls.length === 0) && (
-                      <div className="w-24 h-24 rounded-[1.5rem] bg-slate-50 border border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-300">
-                        <i className="fa-solid fa-images text-xl mb-1"></i>
-                        <span className="text-[7px] font-black uppercase">Empty</span>
-                      </div>
+                    {(!formData.imageUrls || formData.imageUrls.length < 8) && (
+                      <button 
+                        type="button"
+                        onClick={() => handleImagePicker()}
+                        className="aspect-square rounded-[1.5rem] bg-slate-50 border border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-300 hover:bg-slate-100 hover:text-slate-600 transition-all"
+                      >
+                        <i className="fa-solid fa-plus text-xl mb-1"></i>
+                        <span className="text-[7px] font-black uppercase">Add More</span>
+                      </button>
                     )}
                   </div>
                 </div>
@@ -615,6 +686,57 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
               <div className="space-y-12">
                  <div>
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] block mb-6">Cloud Infrastructure Integrity</label>
+                    <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-200">
+                       <div className="flex justify-between items-center mb-6">
+                          <h4 className="font-bold text-slate-900 text-sm">Supabase Sync Diagnostics</h4>
+                          <button 
+                            onClick={checkCloud} 
+                            disabled={cloudStatus.loading}
+                            className="p-2 w-10 h-10 bg-white rounded-xl shadow-sm border border-slate-200 hover:text-sky-600 transition-colors"
+                          >
+                             <i className={`fa-solid fa-arrows-rotate ${cloudStatus.loading ? 'animate-spin' : ''}`}></i>
+                          </button>
+                       </div>
+                       <div className="space-y-4">
+                          <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100">
+                             <div className="flex items-center gap-4">
+                                <div className={`w-3 h-3 rounded-full ${cloudStatus.db ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : 'bg-red-500'}`}></div>
+                                <span className="text-[10px] font-black uppercase text-slate-600">Database (Villas Table)</span>
+                             </div>
+                             <span className={`text-[10px] font-bold ${cloudStatus.db ? 'text-emerald-600' : 'text-red-600'}`}>
+                                {cloudStatus.db ? 'Active' : 'Missing Table'}
+                             </span>
+                          </div>
+                          <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100">
+                             <div className="flex items-center gap-4">
+                                <div className={`w-3 h-3 rounded-full ${cloudStatus.storage ? 'bg-sky-500 shadow-[0_0_10px_#0ea5e9]' : 'bg-red-500'}`}></div>
+                                <span className="text-[10px] font-black uppercase text-slate-600">Media Storage (villa-media)</span>
+                             </div>
+                             <span className={`text-[10px] font-bold ${cloudStatus.storage ? 'text-sky-600' : 'text-red-600'}`}>
+                                {cloudStatus.storage ? 'Synced' : 'Bucket Missing'}
+                             </span>
+                          </div>
+                       </div>
+                       {!cloudStatus.db || !cloudStatus.storage ? (
+                          <div className="mt-6 p-4 bg-amber-50 rounded-2xl border border-amber-100 flex items-start gap-3">
+                             <i className="fa-solid fa-circle-exclamation text-amber-500 mt-1"></i>
+                             <p className="text-[10px] font-medium text-amber-700 leading-relaxed">
+                                Connection issues detected. Please check your Supabase console or re-run the setup SQL script found in the "Inventory" commit log.
+                             </p>
+                          </div>
+                       ) : (
+                          <div className="mt-6 p-4 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-start gap-3">
+                             <i className="fa-solid fa-circle-check text-emerald-500 mt-1"></i>
+                             <p className="text-[10px] font-medium text-emerald-700 leading-relaxed">
+                                All systems operational. Your images and villa data are syncing globally across the Peak Stay network.
+                             </p>
+                          </div>
+                       )}
+                    </div>
+                 </div>
+
+                 <div>
                     <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] block mb-6">Global Active Theme</label>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                        {themeOptions.map((opt) => (
@@ -634,7 +756,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                        ))}
                     </div>
                  </div>
+              </div>
 
+              <div className="space-y-12">
                  {/* Contact Details Management */}
                  <div className="bg-slate-50/50 p-8 rounded-[3rem] border border-slate-100 space-y-8">
                     <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] block mb-2 flex items-center gap-3">
@@ -679,12 +803,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                          <i className="fa-solid fa-phone absolute left-6 top-[70%] -translate-y-1/2 text-orange-500"></i>
                       </div>
                     </div>
-                    <p className="text-[10px] font-medium text-slate-400 italic">Updating these will reflect instantly across all pages and footers.</p>
                  </div>
-              </div>
 
-              <div className="space-y-12 bg-slate-50/50 p-10 rounded-[3rem] border border-slate-100 h-fit">
-                 <div>
+                 <div className="bg-slate-50/50 p-10 rounded-[3rem] border border-slate-100 h-fit">
                     <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] block mb-6">Campaign Broadcast (Marquee)</label>
                     <textarea 
                        value={promoText} 
