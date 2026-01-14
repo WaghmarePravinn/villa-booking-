@@ -39,7 +39,6 @@ const App: React.FC = () => {
 
     const unsubscribeSettings = subscribeToSettings((newSettings) => {
       setSettings(newSettings);
-      // Dynamically set the theme class on body
       document.body.className = `theme-${newSettings.activeTheme}`;
     });
 
@@ -87,19 +86,19 @@ const App: React.FC = () => {
   const renderPage = () => {
     if (currentPage === 'villa-detail' && selectedVillaId) {
       const villa = villas.find(v => v.id === selectedVillaId);
-      if (villa) return <VillaDetailPage villa={villa} user={user} onBack={() => handleNavigate('villas')} />;
+      if (villa) return <VillaDetailPage villa={villa} settings={settings} user={user} onBack={() => handleNavigate('villas')} />;
     }
 
     switch (currentPage) {
       case 'home': return <HomePage villas={villas} settings={settings} onExplore={handleExplore} onViewDetails={handleViewDetails} />;
-      case 'villas': return <VillaListingPage villas={villas} onViewDetails={handleViewDetails} initialFilters={currentFilters} />;
+      case 'villas': return <VillaListingPage villas={villas} settings={settings} onViewDetails={handleViewDetails} initialFilters={currentFilters} />;
       case 'about': return <AboutPage />;
       case 'services': return <ServicesPage />;
       case 'testimonials': return <TestimonialsPage />;
       case 'login': return <LoginPage onLogin={handleLoginSuccess} />;
       case 'user-dashboard':
         if (!user) return <LoginPage onLogin={handleLoginSuccess} />;
-        return <UserDashboard user={user} villas={villas} onViewVilla={handleViewDetails} />;
+        return <UserDashboard user={user} villas={villas} settings={settings} onViewVilla={handleViewDetails} />;
       case 'admin':
         if (!user || user.role !== UserRole.ADMIN) return <LoginPage onLogin={handleLoginSuccess} />;
         return (

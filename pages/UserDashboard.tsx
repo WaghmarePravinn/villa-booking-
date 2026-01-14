@@ -1,15 +1,16 @@
 
 import React, { useState, useEffect } from 'react';
-import { User, Lead, Villa } from '../types';
+import { User, Lead, Villa, SiteSettings } from '../types';
 import { subscribeToLeads } from '../services/leadService';
 
 interface UserDashboardProps {
   user: User;
   villas: Villa[];
+  settings: SiteSettings;
   onViewVilla: (id: string) => void;
 }
 
-const UserDashboard: React.FC<UserDashboardProps> = ({ user, villas, onViewVilla }) => {
+const UserDashboard: React.FC<UserDashboardProps> = ({ user, villas, settings, onViewVilla }) => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -56,7 +57,6 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, villas, onViewVilla
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-        {/* Bookings Feed */}
         <div className="lg:col-span-2 space-y-8">
           <h2 className="text-2xl font-bold font-serif text-slate-900 flex items-center gap-3">
             <i className="fa-solid fa-clock-rotate-left text-amber-500 text-xl"></i>
@@ -105,7 +105,6 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, villas, onViewVilla
           )}
         </div>
 
-        {/* Account Sidebar */}
         <div className="space-y-8">
            <h2 className="text-2xl font-bold font-serif text-slate-900">Account Details</h2>
            <div className="bg-slate-900 text-white p-10 rounded-[3.5rem] shadow-2xl relative overflow-hidden">
@@ -135,11 +134,10 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, villas, onViewVilla
               </div>
            </div>
 
-           {/* Quick Support */}
            <div className="bg-emerald-50 p-8 rounded-[2.5rem] border border-emerald-100">
               <h3 className="font-bold text-slate-900 mb-2">Priority Support</h3>
               <p className="text-xs text-slate-600 mb-6 leading-relaxed">Need help with your current inquiries? Our concierge is on standby.</p>
-              <a href="https://wa.me/+919157928471" className="flex items-center justify-center gap-3 w-full py-4 bg-emerald-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-500/20">
+              <a href={`https://wa.me/${settings.whatsappNumber}`} className="flex items-center justify-center gap-3 w-full py-4 bg-emerald-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-500/20">
                 <i className="fa-brands fa-whatsapp text-lg"></i>
                 Concierge Chat
               </a>

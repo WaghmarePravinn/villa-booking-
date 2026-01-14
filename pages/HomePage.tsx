@@ -223,7 +223,7 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
             alt="Hero background" 
             className="w-full h-full object-cover opacity-10"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-orange-100/20 via-sky-50/50 to-green-100/20"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-sky-100/20 via-sky-50/50 to-sky-100/20"></div>
         </div>
 
         <div 
@@ -231,11 +231,11 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
           style={{ transform: `translate(${-mousePos.x * 0.5}px, ${-mousePos.y * 0.5}px)` }}
         >
           <div className="mb-8 flex items-center justify-center gap-4 animate-reveal">
-             <div className="h-[1px] w-12 bg-orange-500/50"></div>
-             <span className="text-[11px] font-black uppercase tracking-[0.5em] text-orange-500">{settings.promoText}</span>
-             <div className="h-[1px] w-12 bg-green-500/50"></div>
+             <div className="h-[1px] w-12 bg-sky-500/50"></div>
+             <span className="text-[11px] font-black uppercase tracking-[0.5em] text-sky-600">{settings.promoText}</span>
+             <div className="h-[1px] w-12 bg-sky-500/50"></div>
           </div>
-          <h1 className="text-7xl md:text-[10rem] font-bold font-serif mb-8 drop-shadow-[0_20px_50px_rgba(255,153,51,0.1)] animate-reveal uppercase tracking-tighter text-theme-shimmer leading-none">
+          <h1 className="text-7xl md:text-[10rem] font-bold font-serif mb-8 drop-shadow-[0_20px_50px_rgba(14,165,233,0.1)] animate-reveal uppercase tracking-tighter text-theme-shimmer leading-none">
             {BRAND_NAME.split(' ')[0]} <br/> <span className="text-4xl md:text-6xl tracking-[0.2em] font-light italic">Sanctuary</span>
           </h1>
           <p className="text-xl md:text-3xl mb-16 text-sky-900 max-w-3xl mx-auto font-light leading-relaxed animate-reveal stagger-2">
@@ -251,9 +251,9 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
               className="flex-[1.2] w-full px-10 py-5 border-b md:border-b-0 md:border-r border-sky-100 hover:bg-sky-50/50 transition-colors rounded-[2.5rem] md:rounded-none relative group"
               ref={locationRef}
             >
-              <label className="block text-[10px] font-black text-orange-500 uppercase tracking-widest mb-2 group-hover:translate-x-1 transition-transform">Destination</label>
+              <label className="block text-[10px] font-black text-sky-600 uppercase tracking-widest mb-2 group-hover:translate-x-1 transition-transform">Destination</label>
               <div className="flex items-center gap-3">
-                 <i className="fa-solid fa-location-dot text-sky-200 group-hover:text-orange-500 transition-colors"></i>
+                 <i className="fa-solid fa-location-dot text-sky-200 group-hover:text-sky-600 transition-colors"></i>
                  <input 
                   type="text"
                   placeholder="Where to?"
@@ -278,13 +278,13 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
                           setSearchFilters({...searchFilters, location: loc.name});
                           setShowLocationSuggestions(false);
                         }}
-                        className="w-full text-left px-5 py-4 rounded-2xl hover:bg-sky-50 group flex items-center justify-between transition-all"
+                        className="w-full text-left px-3 py-4 rounded-2xl hover:bg-sky-50 group flex items-center justify-between transition-all"
                       >
                         <div className="flex items-center gap-4">
                           <img src={loc.image} className="w-10 h-10 rounded-xl object-cover grayscale group-hover:grayscale-0 transition-all" alt="" />
                           <span className="text-sm font-bold text-sky-700 group-hover:text-sky-900">{loc.name}</span>
                         </div>
-                        <span className="text-[10px] font-black text-sky-200 group-hover:text-orange-500 transition-colors">{loc.count} Stays</span>
+                        <span className="text-[10px] font-black text-sky-200 group-hover:text-sky-600 transition-colors">{loc.count} Stays</span>
                       </button>
                     ))}
                   </div>
@@ -299,7 +299,7 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
                 setShowLocationSuggestions(false);
               }}
             >
-              <label className="block text-[10px] font-black text-green-600 uppercase tracking-widest mb-2 flex items-center gap-2 group-hover:translate-x-1 transition-transform">
+              <label className="block text-[10px] font-black text-sky-600 uppercase tracking-widest mb-2 flex items-center gap-2 group-hover:translate-x-1 transition-transform">
                 <i className="fa-solid fa-calendar-days text-[11px]"></i>
                 Booking Windows
               </label>
@@ -307,7 +307,7 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
                 <div className={`text-base font-bold ${searchFilters.checkIn ? 'text-sky-900' : 'text-sky-300'}`}>
                   {formatDateString(searchFilters.checkIn) || 'Arrival'}
                 </div>
-                <div className="w-8 h-[1px] bg-orange-200"></div>
+                <div className="w-8 h-[1px] bg-sky-200"></div>
                 <div className={`text-base font-bold ${searchFilters.checkOut ? 'text-sky-900' : 'text-sky-300'}`}>
                   {formatDateString(searchFilters.checkOut) || 'Departure'}
                 </div>
@@ -317,7 +317,7 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
             <div className="p-2 w-full md:w-auto">
               <button 
                 onClick={handleSearch}
-                className="republic-btn px-16 py-6 rounded-[2.5rem] font-black text-[11px] uppercase tracking-[0.2em] transition-all flex items-center gap-4 w-full justify-center group shadow-2xl active:scale-95 border-none"
+                className="theme-btn px-16 py-6 rounded-[2.5rem] font-black text-[11px] uppercase tracking-[0.2em] transition-all flex items-center gap-4 w-full justify-center group shadow-2xl active:scale-95 border-none"
               >
                 Explore Sanctum
                 <i className="fa-solid fa-arrow-right-long group-hover:translate-x-2 transition-transform"></i>
@@ -331,7 +331,7 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
       <section className="py-32 bg-slate-900 overflow-hidden relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-20 flex flex-col md:flex-row justify-between items-end gap-10 relative z-10">
           <div className="max-w-2xl">
-             <span className="text-orange-500 font-black uppercase tracking-[0.6em] text-[10px] mb-4 block">The Global Feed</span>
+             <span className="text-sky-500 font-black uppercase tracking-[0.6em] text-[10px] mb-4 block">The Global Feed</span>
              <h2 className="text-5xl md:text-7xl font-bold font-serif text-white leading-none mb-6">Voices of the Sanctuary</h2>
              <p className="text-slate-400 font-light text-lg">Real feedback covering everything from recently done trips to our premium food service.</p>
           </div>
@@ -342,7 +342,7 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
            {[...testimonials, ...testimonials].map((t, i) => (
              <div key={`${t.id}-${i}`} className="inline-block w-[450px] bg-white/5 backdrop-blur-xl border border-white/10 p-12 rounded-[4rem] group hover:bg-white hover:shadow-2xl transition-all duration-700 cursor-default">
                 <div className="flex justify-between items-start mb-8">
-                  <div className="flex gap-1 text-orange-500 text-[10px]">
+                  <div className="flex gap-1 text-sky-400 text-[10px]">
                     {[...Array(t.rating)].map((_, star) => <i key={star} className="fa-solid fa-star"></i>)}
                   </div>
                   <div className="flex items-center gap-2 bg-white/10 group-hover:bg-slate-900 group-hover:text-white px-4 py-2 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all">
@@ -357,7 +357,7 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
                   </div>
                   <div>
                     <h4 className="font-black text-white group-hover:text-slate-900 text-base">{t.name}</h4>
-                    <p className="text-[9px] text-orange-400 font-black uppercase tracking-[0.2em] mt-1">
+                    <p className="text-[9px] text-sky-400 font-black uppercase tracking-[0.2em] mt-1">
                       {t.category === 'Food' ? 'Culinary Review' : t.category === 'Trip' ? 'Travel Review' : 'Verified Stay'}
                     </p>
                   </div>
@@ -367,17 +367,17 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
         </div>
         
         {/* Decorative background glow */}
-        <div className="absolute top-1/2 left-0 w-[500px] h-[500px] bg-orange-500/10 rounded-full blur-[150px] -translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
-        <div className="absolute top-1/2 right-0 w-[500px] h-[500px] bg-green-500/10 rounded-full blur-[150px] translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+        <div className="absolute top-1/2 left-0 w-[500px] h-[500px] bg-sky-500/10 rounded-full blur-[150px] -translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+        <div className="absolute top-1/2 right-0 w-[500px] h-[500px] bg-sky-400/10 rounded-full blur-[150px] translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
       </section>
 
       {/* Interactive Stats Counter */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10" ref={statsRef}>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-16">
           {[
-            { label: "Elite Sanctums", value: "500+", icon: "fa-hotel", color: "text-orange-500" },
+            { label: "Elite Sanctums", value: "500+", icon: "fa-hotel", color: "text-sky-600" },
             { label: "Indian Cities", value: "24+", icon: "fa-map-location-dot", color: "text-sky-600" },
-            { label: "Satisfied Guests", value: "12k", icon: "fa-users-viewfinder", color: "text-green-600" },
+            { label: "Satisfied Guests", value: "12k", icon: "fa-users-viewfinder", color: "text-sky-600" },
             { label: "Expert Concierge", value: "100%", icon: "fa-user-tie", color: "text-sky-900" }
           ].map((stat, i) => (
             <div key={i} className="group bg-white p-8 rounded-[3rem] border border-sky-100 hover:shadow-2xl transition-all duration-700 text-center animate-reveal" style={{ animationDelay: `${i * 100}ms` }}>
@@ -395,16 +395,16 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="mb-20 flex flex-col md:flex-row justify-between items-end gap-8">
           <div className="max-w-2xl">
-            <span className="text-orange-600 font-black uppercase tracking-[0.5em] text-[10px] mb-4 block">Hand-Picked Legacy</span>
+            <span className="text-sky-600 font-black uppercase tracking-[0.5em] text-[10px] mb-4 block">Hand-Picked Legacy</span>
             <h2 className="text-5xl md:text-8xl font-bold font-serif text-sky-900 leading-none">Patriotic Premier Stays</h2>
           </div>
-          <button onClick={() => onExplore()} className="group flex items-center gap-4 text-[11px] font-black uppercase tracking-widest text-green-600 hover:text-orange-500 transition-all border border-green-100 hover:border-orange-100 px-12 py-6 rounded-[2rem] bg-white shadow-sm hover:shadow-2xl active:scale-95">
+          <button onClick={() => onExplore()} className="group flex items-center gap-4 text-[11px] font-black uppercase tracking-widest text-sky-600 hover:text-sky-500 transition-all border border-sky-100 hover:border-sky-200 px-12 py-6 rounded-[2rem] bg-white shadow-sm hover:shadow-2xl active:scale-95">
             Explore All Collection <i className="fa-solid fa-chevron-right group-hover:translate-x-2 transition-transform"></i>
           </button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
           {featuredVillas.map(v => (
-            <VillaCard key={v.id} villa={v} onViewDetails={onViewDetails} />
+            <VillaCard key={v.id} villa={v} whatsappNumber={settings.whatsappNumber} onViewDetails={onViewDetails} />
           ))}
         </div>
       </section>

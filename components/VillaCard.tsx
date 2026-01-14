@@ -1,18 +1,18 @@
 
 import React from 'react';
 import { Villa } from '../types';
-import { WHATSAPP_NUMBER } from '../constants';
 
 interface VillaCardProps {
   villa: Villa;
+  whatsappNumber: string;
   onViewDetails: (id: string) => void;
 }
 
-const VillaCard: React.FC<VillaCardProps> = ({ villa, onViewDetails }) => {
+const VillaCard: React.FC<VillaCardProps> = ({ villa, whatsappNumber, onViewDetails }) => {
   const handleWhatsAppRedirect = (e: React.MouseEvent) => {
     e.stopPropagation();
     const message = encodeURIComponent(`Jai Hind! I'm enquiring about ${villa.name} for the Republic Day 2025 weekend.`);
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, '_blank');
+    window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank');
   };
 
   const mainImage = (villa.imageUrls && villa.imageUrls.length > 0) 

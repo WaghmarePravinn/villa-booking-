@@ -1,19 +1,20 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Villa, VillaFilters } from '../types';
+import { Villa, VillaFilters, SiteSettings } from '../types';
 import VillaCard from '../components/VillaCard';
 import DateRangePicker from '../components/DateRangePicker';
 import { HOTSPOT_LOCATIONS } from '../constants';
 
 interface VillaListingPageProps {
   villas: Villa[];
+  settings: SiteSettings;
   onViewDetails: (id: string) => void;
   initialFilters?: VillaFilters;
 }
 
 type SortOption = 'price-low' | 'price-high' | 'rating' | 'popularity';
 
-const VillaListingPage: React.FC<VillaListingPageProps> = ({ villas, onViewDetails, initialFilters }) => {
+const VillaListingPage: React.FC<VillaListingPageProps> = ({ villas, settings, onViewDetails, initialFilters }) => {
   const [filters, setFilters] = useState<VillaFilters>(initialFilters || {
     location: '',
     minPrice: 0,
@@ -47,7 +48,6 @@ const VillaListingPage: React.FC<VillaListingPageProps> = ({ villas, onViewDetai
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Fix: Correctly handle HOTSPOT_LOCATIONS as objects and access the .name property
   const filteredLocations = useMemo(() => {
     const query = filters.location.toLowerCase().trim();
     if (!query) return HOTSPOT_LOCATIONS;
@@ -301,6 +301,7 @@ const VillaListingPage: React.FC<VillaListingPageProps> = ({ villas, onViewDetai
                   >
                     <VillaCard 
                       villa={villa} 
+                      whatsappNumber={settings.whatsappNumber}
                       onViewDetails={onViewDetails}
                     />
                   </div>

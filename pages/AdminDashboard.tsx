@@ -38,9 +38,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
   const [isDescLoading, setIsDescLoading] = useState(false);
   
   const [promoText, setPromoText] = useState(settings.promoText);
+  const [whatsappNumber, setWhatsappNumber] = useState(settings.whatsappNumber);
+  const [contactEmail, setContactEmail] = useState(settings.contactEmail);
+  const [contactPhone, setContactPhone] = useState(settings.contactPhone);
   const [activeTheme, setActiveTheme] = useState(settings.activeTheme);
   
-  // State for deletion confirmation
   const [villaToDelete, setVillaToDelete] = useState<Villa | null>(null);
 
   const [progress, setProgress] = useState<ProgressState>({
@@ -69,6 +71,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
 
   useEffect(() => {
     setPromoText(settings.promoText);
+    setWhatsappNumber(settings.whatsappNumber);
+    setContactEmail(settings.contactEmail);
+    setContactPhone(settings.contactPhone);
     setActiveTheme(settings.activeTheme);
   }, [settings]);
 
@@ -259,13 +264,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
     }
   };
 
-  const handleUpdateBroadcast = async () => {
+  const handleUpdateBranding = async () => {
     setIsSyncingBroadcast(true);
     try {
-      await updateSettings({ promoText });
-      alert('Broadcast Pushed Successfully!');
+      await updateSettings({ 
+        promoText, 
+        whatsappNumber,
+        contactEmail,
+        contactPhone
+      });
+      alert('Global Branding & Contact Details Updated Successfully!');
     } catch (err: any) {
-      alert('Broadcast Update Failed: ' + (err.message || 'Check connection'));
+      alert('Update Failed: ' + (err.message || 'Check connection'));
     } finally {
       setIsSyncingBroadcast(false);
     }
@@ -600,7 +610,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
 
       {activeTab === 'branding' && (
         <div className="bg-white p-12 rounded-[3.5rem] border border-slate-100 shadow-sm animate-reveal overflow-y-auto h-[calc(100vh-280px)] no-scrollbar">
-           <h2 className="text-4xl font-bold font-serif mb-12 text-slate-900">Visual Identity Control</h2>
+           <h2 className="text-4xl font-bold font-serif mb-12 text-slate-900">Global Branding & Contact Control</h2>
            
            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
               <div className="space-y-12">
@@ -624,26 +634,73 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                        ))}
                     </div>
                  </div>
+
+                 {/* Contact Details Management */}
+                 <div className="bg-slate-50/50 p-8 rounded-[3rem] border border-slate-100 space-y-8">
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] block mb-2 flex items-center gap-3">
+                       <i className="fa-solid fa-address-book text-emerald-500 text-lg"></i>
+                       Contact Details Management
+                    </label>
+                    
+                    <div className="space-y-4">
+                      <div className="relative group">
+                        <label className="text-[8px] font-black uppercase text-slate-400 ml-2 mb-1 block">WhatsApp Concierge</label>
+                         <input 
+                            type="text" 
+                            value={whatsappNumber} 
+                            onChange={(e) => setWhatsappNumber(e.target.value)} 
+                            placeholder="+919999999999"
+                            className="w-full p-6 pl-14 bg-white rounded-3xl border border-slate-200 font-bold text-sm outline-none focus:ring-2 focus:ring-emerald-500 shadow-inner" 
+                         />
+                         <i className="fa-brands fa-whatsapp absolute left-6 top-[70%] -translate-y-1/2 text-emerald-500"></i>
+                      </div>
+
+                      <div className="relative group">
+                        <label className="text-[8px] font-black uppercase text-slate-400 ml-2 mb-1 block">Support Email</label>
+                         <input 
+                            type="email" 
+                            value={contactEmail} 
+                            onChange={(e) => setContactEmail(e.target.value)} 
+                            placeholder="support@peakstay.com"
+                            className="w-full p-6 pl-14 bg-white rounded-3xl border border-slate-200 font-bold text-sm outline-none focus:ring-2 focus:ring-sky-500 shadow-inner" 
+                         />
+                         <i className="fa-solid fa-envelope absolute left-6 top-[70%] -translate-y-1/2 text-sky-500"></i>
+                      </div>
+
+                      <div className="relative group">
+                        <label className="text-[8px] font-black uppercase text-slate-400 ml-2 mb-1 block">Direct Hotline</label>
+                         <input 
+                            type="text" 
+                            value={contactPhone} 
+                            onChange={(e) => setContactPhone(e.target.value)} 
+                            placeholder="+919999999999"
+                            className="w-full p-6 pl-14 bg-white rounded-3xl border border-slate-200 font-bold text-sm outline-none focus:ring-2 focus:ring-orange-500 shadow-inner" 
+                         />
+                         <i className="fa-solid fa-phone absolute left-6 top-[70%] -translate-y-1/2 text-orange-500"></i>
+                      </div>
+                    </div>
+                    <p className="text-[10px] font-medium text-slate-400 italic">Updating these will reflect instantly across all pages and footers.</p>
+                 </div>
               </div>
 
-              <div className="space-y-12 bg-slate-50/50 p-10 rounded-[3rem] border border-slate-100">
+              <div className="space-y-12 bg-slate-50/50 p-10 rounded-[3rem] border border-slate-100 h-fit">
                  <div>
                     <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] block mb-6">Campaign Broadcast (Marquee)</label>
                     <textarea 
                        value={promoText} 
                        onChange={(e) => setPromoText(e.target.value)} 
                        placeholder="Enter offer text..."
-                       className="w-full p-6 bg-white rounded-3xl border border-slate-200 font-bold text-sm outline-none focus:ring-2 focus:ring-slate-900" 
+                       className="w-full p-6 bg-white rounded-3xl border border-slate-200 font-bold text-sm outline-none focus:ring-2 focus:ring-slate-900 shadow-inner" 
                        rows={4} 
                     />
                     <div className="flex justify-between items-center mt-6">
-                       <p className="text-[10px] font-medium text-slate-400 italic">This text scrolls across the very top of the website.</p>
+                       <p className="text-[10px] font-medium text-slate-400 italic">This text scrolls across the top marquee.</p>
                        <button 
-                          onClick={handleUpdateBroadcast}
+                          onClick={handleUpdateBranding}
                           disabled={isSyncingBroadcast}
                           className="px-10 py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase shadow-lg hover:bg-black transition-all flex items-center gap-2 disabled:opacity-50"
                        >
-                          {isSyncingBroadcast ? 'Syncing...' : 'Update Broadcast'}
+                          {isSyncingBroadcast ? 'Syncing...' : 'Update Settings'}
                        </button>
                     </div>
                  </div>

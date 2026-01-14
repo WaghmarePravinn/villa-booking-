@@ -18,6 +18,9 @@ export enum AppTheme {
 export interface SiteSettings {
   activeTheme: AppTheme;
   promoText: string;
+  whatsappNumber: string;
+  contactEmail: string;
+  contactPhone: string;
 }
 
 export interface User {

@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { User, UserRole, SiteSettings } from '../types';
-import { BRAND_NAME, CONTACT_EMAIL } from '../constants';
+import { BRAND_NAME } from '../constants';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -93,7 +94,6 @@ const Layout: React.FC<LayoutProps> = ({ children, user, settings, onLogout, onN
                     </span>
                     <span className="text-[11px] font-black leading-none">{user.username}</span>
                   </div>
-                  {/* Fixed: Use onLogout prop instead of non-existent handleLogout */}
                   <button 
                     onClick={onLogout}
                     className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-slate-300 hover:text-red-500 shadow-sm transition-all border border-slate-50"
@@ -153,13 +153,35 @@ const Layout: React.FC<LayoutProps> = ({ children, user, settings, onLogout, onN
             </div>
             <div>
               <h4 className="font-black mb-8 uppercase text-[10px] tracking-[0.3em]" style={{ color: 'var(--t-secondary)' }}>Contact Hub</h4>
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
-                  <i className="fa-solid fa-envelope"></i>
+              <div className="flex flex-col gap-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
+                    <i className="fa-solid fa-envelope"></i>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black uppercase opacity-40 tracking-widest">Global Support</p>
+                    <a href={`mailto:${settings.contactEmail}`} className="text-sm font-bold hover:opacity-70 transition-opacity">{settings.contactEmail}</a>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase opacity-40 tracking-widest">Global Support</p>
-                  <a href={`mailto:${CONTACT_EMAIL}`} className="text-sm font-bold hover:opacity-70 transition-opacity">{CONTACT_EMAIL}</a>
+
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-emerald-500">
+                    <i className="fa-brands fa-whatsapp"></i>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black uppercase opacity-40 tracking-widest">WhatsApp</p>
+                    <a href={`https://wa.me/${settings.whatsappNumber}`} target="_blank" className="text-sm font-bold hover:opacity-70 transition-opacity">{settings.whatsappNumber}</a>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-orange-500">
+                    <i className="fa-solid fa-phone"></i>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black uppercase opacity-40 tracking-widest">Hotline</p>
+                    <a href={`tel:${settings.contactPhone}`} className="text-sm font-bold hover:opacity-70 transition-opacity">{settings.contactPhone}</a>
+                  </div>
                 </div>
               </div>
             </div>

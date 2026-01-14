@@ -7,7 +7,10 @@ const LOCAL_STORAGE_KEY = "peak_stay_settings_sandbox";
 
 export const DEFAULT_SETTINGS: SiteSettings = {
   activeTheme: AppTheme.DEFAULT,
-  promoText: "PEAK STAY EXCLUSIVE: BOOK YOUR LEGACY SANCTUARY TODAY"
+  promoText: "PEAK STAY EXCLUSIVE: BOOK YOUR LEGACY SANCTUARY TODAY",
+  whatsappNumber: "+919157928471",
+  contactEmail: "peakstaydestination@gmail.com",
+  contactPhone: "+919157928471"
 };
 
 const getLocalSettings = (): SiteSettings => {
@@ -22,7 +25,6 @@ const getLocalSettings = (): SiteSettings => {
 
 const saveLocalSettings = (settings: SiteSettings) => {
   localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(settings));
-  // Create and dispatch a custom event that includes the settings
   const event = new CustomEvent('peak_stay_settings_updated', { detail: settings });
   window.dispatchEvent(event);
 };
@@ -41,7 +43,10 @@ export const subscribeToSettings = (callback: (settings: SiteSettings) => void) 
       if (!error && data) {
         callback({
           activeTheme: data.active_theme as AppTheme,
-          promoText: data.promo_text
+          promoText: data.promo_text,
+          whatsappNumber: data.whatsapp_number || DEFAULT_SETTINGS.whatsappNumber,
+          contactEmail: data.contact_email || DEFAULT_SETTINGS.contactEmail,
+          contactPhone: data.contact_phone || DEFAULT_SETTINGS.contactPhone
         });
       } else {
         callback(DEFAULT_SETTINGS);
@@ -63,19 +68,19 @@ export const updateSettings = async (settings: Partial<SiteSettings>) => {
   const current = getLocalSettings();
   const updated = { ...current, ...settings };
   
-  // Update local immediately for UI responsiveness
   saveLocalSettings(updated);
 
   if (!isSupabaseAvailable) {
-    console.warn("Supabase not available, settings saved to local storage only.");
     return;
   }
 
   const payload: any = { id: 1 };
   if (settings.activeTheme) payload.active_theme = settings.activeTheme;
   if (settings.promoText) payload.promo_text = settings.promoText;
+  if (settings.whatsappNumber) payload.whatsapp_number = settings.whatsappNumber;
+  if (settings.contactEmail) payload.contact_email = settings.contactEmail;
+  if (settings.contactPhone) payload.contact_phone = settings.contactPhone;
 
-  // Use upsert to handle both creation and update of the settings row (ID=1)
   const { error } = await supabase
     .from(TABLE)
     .upsert(payload, { onConflict: 'id' });

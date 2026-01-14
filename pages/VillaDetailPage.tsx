@@ -1,16 +1,17 @@
+
 import React, { useEffect, useState } from 'react';
-import { Villa, User } from '../types';
-import { WHATSAPP_NUMBER } from '../constants';
+import { Villa, User, SiteSettings } from '../types';
 import DateRangePicker from '../components/DateRangePicker';
 import { saveLead } from '../services/leadService';
 
 interface VillaDetailPageProps {
   villa: Villa;
+  settings: SiteSettings;
   user: User | null;
   onBack: () => void;
 }
 
-const VillaDetailPage: React.FC<VillaDetailPageProps> = ({ villa, user, onBack }) => {
+const VillaDetailPage: React.FC<VillaDetailPageProps> = ({ villa, settings, user, onBack }) => {
   const [scrolled, setScrolled] = useState(false);
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
@@ -39,10 +40,9 @@ const VillaDetailPage: React.FC<VillaDetailPageProps> = ({ villa, user, onBack }
       
       setShowSuccess(true);
       
-      // Delay to let user see success state before redirection
       setTimeout(() => {
         const message = encodeURIComponent(`Jai Hind! I'm interested in ${villa.name} for the stay: ${checkIn || 'flexible'} to ${checkOut || 'flexible'}. Please confirm availability.`);
-        window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, '_blank');
+        window.open(`https://wa.me/${settings.whatsappNumber}?text=${message}`, '_blank');
         setShowSuccess(false);
       }, 2000);
       
