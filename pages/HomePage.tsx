@@ -1,9 +1,10 @@
 
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import { Villa, VillaFilters, SiteSettings, AppTheme } from '../types';
+import { Villa, VillaFilters, SiteSettings, AppTheme, Testimonial } from '../types';
 import VillaCard from '../components/VillaCard';
 import DateRangePicker from '../components/DateRangePicker';
 import { SERVICES, BRAND_NAME, HOTSPOT_LOCATIONS } from '../constants';
+import { subscribeToTestimonials } from '../services/testimonialService';
 
 interface HomePageProps {
   villas: Villa[];
@@ -19,6 +20,7 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
   const [showFestivePopup, setShowFestivePopup] = useState(false);
   const [liveBooking, setLiveBooking] = useState<{name: string, location: string} | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   
   const locationRef = useRef<HTMLDivElement>(null);
   const statsRef = useRef<HTMLDivElement>(null);
@@ -43,6 +45,12 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
       y: (clientY - centerY) / 50
     });
   };
+
+  // Fetch testimonials
+  useEffect(() => {
+    const unsub = subscribeToTestimonials(setTestimonials);
+    return () => unsub();
+  }, []);
 
   // Live Booking Simulations
   useEffect(() => {
@@ -122,6 +130,17 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
       checkOut: end
     }));
   }, []);
+
+  const getCategoryIcon = (category: Testimonial['category']) => {
+    switch (category) {
+      case 'Trip': return 'fa-suitcase-rolling';
+      case 'Booking': return 'fa-calendar-check';
+      case 'Food': return 'fa-utensils';
+      case 'Service': return 'fa-concierge-bell';
+      case 'Hospitality': return 'fa-heart';
+      default: return 'fa-star';
+    }
+  };
 
   return (
     <div className="space-y-24 pb-24 overflow-x-hidden relative bg-[#f0f9ff]" onMouseMove={handleMouseMove}>
@@ -329,6 +348,47 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
         </div>
       </section>
 
+      {/* RECENT REVIEWS ANIMATED SECTION */}
+      <section className="py-24 bg-slate-900 overflow-hidden relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16 flex justify-between items-end relative z-10">
+          <div className="max-w-xl">
+             <span className="text-orange-500 font-black uppercase tracking-[0.5em] text-[10px] mb-4 block">Real Perspectives</span>
+             <h2 className="text-5xl font-bold font-serif text-white leading-tight">Voices of the Sanctuary</h2>
+          </div>
+          <button onClick={() => (window as any).location.hash = 'testimonials'} className="text-[10px] font-black text-orange-400 uppercase tracking-widest border-b-2 border-orange-400 pb-2 hover:text-white hover:border-white transition-all">Read All Stories</button>
+        </div>
+
+        <div className="flex animate-[marquee_60s_linear_infinite] whitespace-nowrap gap-8 hover:[animation-play-state:paused]">
+           {[...testimonials, ...testimonials].map((t, i) => (
+             <div key={`${t.id}-${i}`} className="inline-block w-[400px] bg-white/5 backdrop-blur-md border border-white/10 p-10 rounded-[3rem] group hover:bg-white hover:shadow-2xl transition-all duration-700">
+                <div className="flex justify-between items-start mb-6">
+                  <div className="flex gap-1 text-orange-500 text-[10px]">
+                    {[...Array(t.rating)].map((_, star) => <i key={star} className="fa-solid fa-star"></i>)}
+                  </div>
+                  <div className="flex items-center gap-2 bg-white/10 group-hover:bg-slate-900 group-hover:text-white px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest transition-colors">
+                    <i className={`fa-solid ${getCategoryIcon(t.category)}`}></i>
+                    {t.category}
+                  </div>
+                </div>
+                <p className="text-slate-300 group-hover:text-slate-700 whitespace-normal leading-loose font-medium mb-10 text-lg line-clamp-3">"{t.content}"</p>
+                <div className="flex items-center gap-4 mt-auto border-t border-white/10 group-hover:border-slate-100 pt-8">
+                  <div className="w-12 h-12 rounded-2xl overflow-hidden shadow-xl">
+                    <img src={t.avatar} alt={t.name} className="w-full h-full object-cover" />
+                  </div>
+                  <div>
+                    <h4 className="font-black text-white group-hover:text-slate-900 text-sm">{t.name}</h4>
+                    <p className="text-[8px] text-orange-400 font-black uppercase tracking-[0.2em] mt-1">Verified Guest Experience</p>
+                  </div>
+                </div>
+             </div>
+           ))}
+        </div>
+        
+        {/* Background glow effects */}
+        <div className="absolute top-1/2 left-0 w-96 h-96 bg-orange-500/10 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+        <div className="absolute top-1/2 right-0 w-96 h-96 bg-green-500/10 rounded-full blur-[120px] translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+      </section>
+
       {showPicker && (
         <div 
           className="fixed inset-0 z-[500] flex items-center justify-center p-4 md:p-6 bg-sky-900/10 backdrop-blur-md animate-fade overflow-y-auto"
@@ -367,6 +427,10 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
         @keyframes confetti-fall {
           0% { transform: translateY(0) rotate(0deg); opacity: 1; }
           100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+        @keyframes marquee {
+          from { transform: translateX(0); }
+          to { transform: translateX(-50%); }
         }
       `}</style>
     </div>
