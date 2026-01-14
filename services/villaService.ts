@@ -6,6 +6,7 @@ import { handleDbError } from "./errorUtils";
 
 const TABLE = "villas";
 const LOCAL_STORAGE_KEY = "peak_stay_villas_sandbox";
+const UPDATE_EVENT = 'peak_stay_villas_updated';
 
 const generateUUID = () => {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -37,6 +38,8 @@ const getLocalVillas = (): Villa[] => {
 
 const saveLocalVillas = (villas: Villa[]) => {
   localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(villas));
+  // Dispatch custom event for same-tab updates
+  window.dispatchEvent(new CustomEvent(UPDATE_EVENT, { detail: villas }));
 };
 
 const mapFromDb = (v: any): Villa => ({
@@ -89,9 +92,17 @@ const mapToDb = (v: Partial<Villa>) => {
 export const subscribeToVillas = (callback: (villas: Villa[]) => void) => {
   if (!isSupabaseAvailable) {
     callback(getLocalVillas());
+    
+    const handleUpdate = (e: any) => callback(e.detail || getLocalVillas());
     const handleStorage = () => callback(getLocalVillas());
+    
+    window.addEventListener(UPDATE_EVENT, handleUpdate);
     window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
+    
+    return () => {
+      window.removeEventListener(UPDATE_EVENT, handleUpdate);
+      window.removeEventListener('storage', handleStorage);
+    };
   }
 
   const fetchVillas = async () => {
@@ -107,7 +118,7 @@ export const subscribeToVillas = (callback: (villas: Villa[]) => void) => {
 
   fetchVillas();
   const channel = supabase.channel('catalog-realtime')
-    .on('postgres_changes', { event: '*', schema: 'public', table: TABLE }, (payload) => {
+    .on('postgres_changes', { event: '*', schema: 'public', table: TABLE }, () => {
       fetchVillas();
     })
     .subscribe();
@@ -120,7 +131,6 @@ export const createVilla = async (villa: Omit<Villa, 'id'>): Promise<string> => 
     const villas = getLocalVillas();
     const newVilla = { ...villa, id: generateUUID() } as Villa;
     saveLocalVillas([newVilla, ...villas]);
-    window.dispatchEvent(new Event('storage'));
     return newVilla.id;
   }
   const payload = mapToDb(villa);
@@ -137,7 +147,6 @@ export const updateVillaById = async (id: string, villa: Partial<Villa>): Promis
     if (index !== -1) {
       villas[index] = { ...villas[index], ...villa };
       saveLocalVillas(villas);
-      window.dispatchEvent(new Event('storage'));
     }
     return;
   }
@@ -152,11 +161,12 @@ export const updateVillaById = async (id: string, villa: Partial<Villa>): Promis
 };
 
 export const deleteVillaById = async (id: string): Promise<void> => {
-  const localVillas = getLocalVillas();
-  saveLocalVillas(localVillas.filter(v => v.id !== id));
-  window.dispatchEvent(new Event('storage'));
-
-  if (!isSupabaseAvailable) return;
+  if (!isSupabaseAvailable) {
+    const localVillas = getLocalVillas();
+    saveLocalVillas(localVillas.filter(v => v.id !== id));
+    return;
+  }
+  
   if (!isValidUUID(id)) return;
 
   const { error } = await supabase.from(TABLE).delete().eq('id', id);
@@ -176,7 +186,6 @@ export const uploadMedia = async (file: File, folder: 'images' | 'videos', onPro
   try {
     const { error } = await supabase.storage.from('villa-media').upload(filePath, file);
     if (error) {
-       // Fallback to local preview if Supabase upload fails (e.g. bucket missing)
        console.warn("Supabase Upload Failed, falling back to local ObjectURL", error);
        if (onProgress) onProgress(100);
        return URL.createObjectURL(file);

@@ -114,6 +114,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
     });
     setIsEditing(false);
     setMagicPrompt('');
+    if (imageInputRef.current) imageInputRef.current.value = '';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -121,12 +122,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
     if (!formData.name || !formData.location) return;
     
     setIsSyncing(true);
+    setProgress({ active: true, message: 'Syncing Changes...', percentage: 50, error: null });
+    
     try {
       if (isEditing) {
         await onUpdateVilla(formData as Villa);
       } else {
         await onAddVilla(formData as Villa);
       }
+      setProgress({ active: true, message: 'Committed Successfully', percentage: 100, error: null, subMessage: 'Changes are now live.' });
+      setTimeout(() => setProgress(prev => ({ ...prev, active: false })), 2000);
       resetForm();
     } catch (err: any) {
       setProgress({ 
@@ -161,8 +166,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
         uploadedUrls.push(url);
       }
       setFormData(prev => ({ ...prev, imageUrls: uploadedUrls }));
-      setProgress({ active: true, message: 'Assets Committed', percentage: 100, subMessage: 'Gallery updated successfully.' });
-      setTimeout(() => setProgress(prev => ({ ...prev, active: false })), 2000);
+      setProgress({ active: true, message: 'Assets Buffered', percentage: 100, subMessage: 'Click "Commit Changes" to finalize.' });
+      setTimeout(() => setProgress(prev => ({ ...prev, active: false })), 2500);
     } catch (err: any) {
       setProgress({ 
         active: true, 
@@ -240,7 +245,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                 <p className={`text-[10px] font-black uppercase tracking-widest ${progress.error ? 'text-red-600' : 'text-slate-600'}`}>
                   {progress.message}
                 </p>
-                <h4 className="text-sm font-bold truncate">{progress.error ? 'Error Detected' : 'Instant Sync'}</h4>
+                <h4 className="text-sm font-bold truncate">{progress.error ? 'Error Detected' : 'Cloud Sync'}</h4>
               </div>
             </div>
             {progress.error && (
@@ -273,7 +278,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
            <div className="flex items-center gap-3 mt-3">
              <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[9px] font-black uppercase tracking-widest">
                 <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                Cloud Sync: Active
+                Status: {isSyncing ? 'Committing...' : 'Real-time'}
              </div>
            </div>
         </div>
