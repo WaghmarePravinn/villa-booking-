@@ -22,15 +22,17 @@ const getLocalSettings = (): SiteSettings => {
 
 const saveLocalSettings = (settings: SiteSettings) => {
   localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(settings));
-  window.dispatchEvent(new Event('storage'));
+  // Create and dispatch a custom event that includes the settings
+  const event = new CustomEvent('peak_stay_settings_updated', { detail: settings });
+  window.dispatchEvent(event);
 };
 
 export const subscribeToSettings = (callback: (settings: SiteSettings) => void) => {
   if (!isSupabaseAvailable) {
     callback(getLocalSettings());
-    const handleStorage = () => callback(getLocalSettings());
-    window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
+    const handleUpdate = (e: any) => callback(e.detail);
+    window.addEventListener('peak_stay_settings_updated', handleUpdate);
+    return () => window.removeEventListener('peak_stay_settings_updated', handleUpdate);
   }
 
   const fetchSettings = async () => {
@@ -42,7 +44,6 @@ export const subscribeToSettings = (callback: (settings: SiteSettings) => void) 
           promoText: data.promo_text
         });
       } else {
-        // If row doesn't exist, we'll use default or try to initialize
         callback(DEFAULT_SETTINGS);
       }
     } catch (e) {
@@ -59,12 +60,16 @@ export const subscribeToSettings = (callback: (settings: SiteSettings) => void) 
 };
 
 export const updateSettings = async (settings: Partial<SiteSettings>) => {
-  // Always update local for immediate feedback and sandbox support
   const current = getLocalSettings();
   const updated = { ...current, ...settings };
+  
+  // Update local immediately for UI responsiveness
   saveLocalSettings(updated);
 
-  if (!isSupabaseAvailable) return;
+  if (!isSupabaseAvailable) {
+    console.warn("Supabase not available, settings saved to local storage only.");
+    return;
+  }
 
   const payload: any = { id: 1 };
   if (settings.activeTheme) payload.active_theme = settings.activeTheme;
@@ -76,7 +81,7 @@ export const updateSettings = async (settings: Partial<SiteSettings>) => {
     .upsert(payload, { onConflict: 'id' });
     
   if (error) {
-    console.error("Settings Update Failed:", error);
+    console.error("Supabase Settings Sync Failed:", error);
     throw error;
   }
 };
