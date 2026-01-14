@@ -1,9 +1,21 @@
 
-import React from 'react';
-import { SERVICES } from '../constants';
+import React, { useState, useEffect } from 'react';
+import { Service } from '../types';
+import { subscribeToServices } from '../services/serviceService';
 
 const ServicesPage: React.FC = () => {
-  const categories = [
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsub = subscribeToServices((data) => {
+      setServices(data);
+      setLoading(false);
+    });
+    return () => unsub();
+  }, []);
+
+  const additionalCategories = [
     {
       title: "Desi Gourmet Experiences",
       description: "Celebrate Indian flavors with our in-villa chefs specializing in regional delicacies from across the subcontinent.",
@@ -28,28 +40,33 @@ const ServicesPage: React.FC = () => {
             Luxury defined by the warmth of Indian hospitality and modern seamless orchestration.
           </p>
         </div>
-        {/* Subtle tri-color background circles */}
         <div className="absolute -top-24 -left-24 w-96 h-96 bg-orange-100/20 rounded-full blur-3xl"></div>
         <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-green-100/20 rounded-full blur-3xl"></div>
       </section>
 
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 relative z-20">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {SERVICES.map((service, idx) => (
-            <div key={service.id} className="bg-white p-10 rounded-[3rem] shadow-xl border border-sky-50 flex flex-col items-center text-center transform hover:-translate-y-2 transition-all duration-500">
-              <div className="w-20 h-20 bg-sky-50 rounded-3xl flex items-center justify-center mb-8 text-orange-500 text-3xl shadow-inner border border-sky-100">
-                <i className={`fa-solid ${service.icon}`}></i>
+        {loading ? (
+          <div className="text-center py-20 bg-white rounded-[3rem] shadow-xl text-[10px] font-black uppercase text-sky-400 tracking-widest animate-pulse">
+            Syncing Concierge Services...
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {services.map((service, idx) => (
+              <div key={service.id} className="bg-white p-10 rounded-[3rem] shadow-xl border border-sky-50 flex flex-col items-center text-center transform hover:-translate-y-2 transition-all duration-500 animate-reveal" style={{ animationDelay: `${idx * 100}ms` }}>
+                <div className="w-20 h-20 bg-sky-50 rounded-3xl flex items-center justify-center mb-8 text-orange-500 text-3xl shadow-inner border border-sky-100">
+                  <i className={`fa-solid ${service.icon}`}></i>
+                </div>
+                <h3 className="text-2xl font-bold mb-4 font-serif text-sky-900">{service.title}</h3>
+                <p className="text-sky-600 leading-relaxed text-sm">{service.description}</p>
               </div>
-              <h3 className="text-2xl font-bold mb-4 font-serif text-sky-900">{service.title}</h3>
-              <p className="text-sky-600 leading-relaxed text-sm">{service.description}</p>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32">
         <div className="space-y-32">
-           {categories.map((cat, idx) => (
+           {additionalCategories.map((cat, idx) => (
              <div key={idx} className={`flex flex-col ${idx % 2 === 0 ? 'lg:flex-row' : 'lg:flex-row-reverse'} gap-20 items-center`}>
                <div className="lg:w-1/2">
                  <img src={cat.image} className="rounded-[3rem] shadow-2xl w-full h-[500px] object-cover border border-sky-100" alt="" />

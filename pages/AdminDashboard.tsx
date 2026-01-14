@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import JSZip from 'jszip';
-import { Villa, Testimonial, Lead, AppTheme, SiteSettings } from '../types';
+import { Villa, Testimonial, Lead, AppTheme, SiteSettings, Service } from '../types';
 import { generateVillaFromPrompt } from '../services/geminiService';
 import { uploadMedia } from '../services/villaService';
 import { updateSettings } from '../services/settingsService';
 import { subscribeToLeads, updateLeadStatus, deleteLead } from '../services/leadService';
 import { subscribeToTestimonials, deleteTestimonial } from '../services/testimonialService';
+import { subscribeToServices, createService, updateService, deleteService } from '../services/serviceService';
 
 interface AdminDashboardProps {
   villas: Villa[];
@@ -17,7 +18,7 @@ interface AdminDashboardProps {
   onRefreshData: () => Promise<void>;
 }
 
-type AdminTab = 'inventory' | 'inquiries' | 'reviews' | 'branding';
+type AdminTab = 'inventory' | 'inquiries' | 'services' | 'reviews' | 'branding';
 
 interface ProgressState {
   active: boolean;
@@ -32,9 +33,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
   const [isEditing, setIsEditing] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [newAmenity, setNewAmenity] = useState('');
-  const [newService, setNewService] = useState('');
-  const [newVideoUrl, setNewVideoUrl] = useState('');
   const [magicPrompt, setMagicPrompt] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [promoText, setPromoText] = useState(settings.promoText);
@@ -48,9 +46,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
   });
   
   const [showSuccessModal, setShowSuccessModal] = useState<{ show: boolean, type: string | null }>({ show: false, type: null });
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<{ show: boolean, id: string | null, name: string | null }>({ show: false, id: null, name: null });
   const [managedReviews, setManagedReviews] = useState<Testimonial[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [managedServices, setManagedServices] = useState<Service[]>([]);
+  
+  // Service Form State
+  const [serviceFormData, setServiceFormData] = useState<Partial<Service>>({ title: '', description: '', icon: 'fa-concierge-bell' });
+  const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
 
   const zipInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -58,9 +60,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
   useEffect(() => {
     const unsubLeads = subscribeToLeads(setLeads);
     const unsubReviews = subscribeToTestimonials(setManagedReviews);
+    const unsubServices = subscribeToServices(setManagedServices);
     return () => {
       unsubLeads();
       unsubReviews();
+      unsubServices();
     };
   }, []);
 
@@ -108,10 +112,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
     }
   };
 
-  const confirmDeleteVilla = (id: string, name: string) => {
-    setShowDeleteConfirm({ show: true, id, name });
-  };
-
   const resetForm = () => {
     setFormData({
       name: '', location: '', pricePerNight: 0, bedrooms: 2, bathrooms: 2, capacity: 4, numRooms: 2,
@@ -122,10 +122,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
     });
     setIsEditing(false);
     setMagicPrompt('');
-    setNewAmenity('');
-    setNewService('');
-    setNewVideoUrl('');
-    setProgress({ active: false, message: '', percentage: 0, subMessage: '', error: null });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -143,31 +139,29 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
       }
       resetForm();
     } catch (err: any) {
-      alert(`Commit Failure: ${err.message}`);
+      setProgress({ active: true, message: 'Sync Error', percentage: 0, error: err.message });
     } finally {
       setIsSyncing(false);
     }
   };
 
-  const handleAddAmenity = () => {
-    if (!newAmenity.trim()) return;
-    if (formData.amenities?.includes(newAmenity.trim())) return;
-    setFormData(prev => ({ ...prev, amenities: [...(prev.amenities || []), newAmenity.trim()] }));
-    setNewAmenity('');
-  };
-
-  const handleAddService = () => {
-    if (!newService.trim()) return;
-    if (formData.includedServices?.includes(newService.trim())) return;
-    setFormData(prev => ({ ...prev, includedServices: [...(prev.includedServices || []), newService.trim()] }));
-    setNewService('');
-  };
-
-  const handleAddVideo = () => {
-    if (!newVideoUrl.trim()) return;
-    if (formData.videoUrls?.includes(newVideoUrl.trim())) return;
-    setFormData(prev => ({ ...prev, videoUrls: [...(prev.videoUrls || []), newVideoUrl.trim()] }));
-    setNewVideoUrl('');
+  const handleServiceSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!serviceFormData.title) return;
+    setIsSyncing(true);
+    try {
+      if (editingServiceId) {
+        await updateService(editingServiceId, serviceFormData);
+      } else {
+        await createService(serviceFormData as Omit<Service, 'id'>);
+      }
+      setServiceFormData({ title: '', description: '', icon: 'fa-concierge-bell' });
+      setEditingServiceId(null);
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   const handleManualImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -199,94 +193,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
     }
   };
 
-  const handleBulkZipUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsSyncing(true);
-    setProgress({ active: true, message: 'Processing Archive...', percentage: 5, error: null });
-    
+  const handleUpdateLead = async (id: string, status: Lead['status']) => {
     try {
-      const zip = new JSZip();
-      const content = await zip.loadAsync(file);
-      const villaMap: Record<string, { name: string, location: string, bhk: number, photos: Blob[] }> = {};
-
-      for (const [relativePath, zipEntry] of Object.entries(content.files)) {
-        if ((zipEntry as any).dir) continue;
-        const pathParts = relativePath.split('/');
-        if (pathParts.length < 3) continue;
-
-        const bhkFolder = pathParts[0]; 
-        const infoFolder = pathParts[1]; 
-        const fileName = pathParts[2];
-        const bhkCount = parseInt(bhkFolder.match(/\d+/)?.[0] || '2');
-        const [vName, vLoc] = infoFolder.includes('_') ? infoFolder.split('_') : [infoFolder, 'Unknown'];
-
-        const key = `${bhkFolder}/${infoFolder}`;
-        if (!villaMap[key]) villaMap[key] = { name: vName.trim(), location: vLoc.trim(), bhk: bhkCount, photos: [] };
-        if (fileName.match(/\.(jpg|jpeg|png|webp)$/i)) {
-          villaMap[key].photos.push(await (zipEntry as any).async('blob'));
-        }
-      }
-
-      const villasToProcess = Object.keys(villaMap);
-      const totalVillas = villasToProcess.length;
-      
-      for (let vIdx = 0; vIdx < totalVillas; vIdx++) {
-        const key = villasToProcess[vIdx];
-        const data = villaMap[key];
-        const imageUrls: string[] = [];
-        
-        for (let pIdx = 0; pIdx < data.photos.length; pIdx++) {
-          const photoBlob = data.photos[pIdx];
-          const photoFile = new File([photoBlob], `bulk_${pIdx}.jpg`, { type: photoBlob.type });
-          
-          const url = await uploadMedia(photoFile, 'images', (percent) => {
-            setProgress({
-              active: true,
-              percentage: percent,
-              message: `Committing Villa ${vIdx + 1}/${totalVillas}: ${data.name}`,
-              subMessage: `Asset ${pIdx + 1}/${data.photos.length} (${percent}%)`
-            });
-          });
-          imageUrls.push(url);
-        }
-
-        await onAddVilla({
-          ...formData,
-          name: data.name,
-          location: data.location,
-          bedrooms: data.bhk,
-          numRooms: data.bhk,
-          capacity: data.bhk * 2,
-          description: `Luxurious ${data.bhk}BHK retreat in ${data.location}.`,
-          imageUrls: imageUrls
-        } as Villa);
-      }
-      
-      setProgress({ active: true, message: 'Migration Success', percentage: 100, subMessage: `${totalVillas} records committed to cloud.` });
-      setShowSuccessModal({ show: true, type: 'Batch Import Complete' });
-      setTimeout(() => setProgress(prev => ({ ...prev, active: false })), 3000);
+      await updateLeadStatus(id, status);
     } catch (err: any) {
-      setProgress({ active: true, message: 'Batch Commit Failed', percentage: 0, error: err.message });
-    } finally {
-      setIsSyncing(false);
-      if (zipInputRef.current) zipInputRef.current.value = '';
+      alert(err.message);
     }
   };
 
-  const handleThemeChange = async (theme: AppTheme) => {
-    setIsSyncing(true);
-    await updateSettings({ activeTheme: theme });
-    setIsSyncing(false);
-    setShowSuccessModal({ show: true, type: 'Identity Updated' });
-  };
-
-  const handlePromoSave = async () => {
-    setIsSyncing(true);
-    await updateSettings({ promoText });
-    setIsSyncing(false);
-    setShowSuccessModal({ show: true, type: 'Broadcast Committed' });
+  const getStatusColor = (status: Lead['status']) => {
+    switch (status) {
+      case 'booked': return 'bg-emerald-500';
+      case 'contacted': return 'bg-sky-500';
+      case 'lost': return 'bg-red-400';
+      default: return 'bg-amber-500';
+    }
   };
 
   return (
@@ -312,69 +233,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
               </button>
             )}
           </div>
-          
           {!progress.error && (
             <div className="w-full h-1 bg-sky-200 rounded-full overflow-hidden mb-3">
                <div className="h-full bg-sky-600 transition-all duration-300" style={{ width: `${progress.percentage}%` }}></div>
             </div>
           )}
-          
           <p className="text-[9px] font-bold text-sky-400 uppercase tracking-widest">{progress.subMessage}</p>
-          
           {progress.error && (
             <div className="mt-6 pt-6 border-t border-sky-200">
               <pre className="text-[11px] font-medium leading-relaxed bg-white/60 p-4 rounded-xl overflow-x-auto whitespace-pre-wrap select-all font-mono">
                 {progress.error}
               </pre>
-              <p className="mt-4 text-[9px] text-sky-600 font-black uppercase tracking-widest text-center">
-                Copy the SQL above and run it in Supabase
-              </p>
             </div>
           )}
-        </div>
-      )}
-
-      {/* SUCCESS MODAL */}
-      {showSuccessModal.show && (
-        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-sky-100/60 backdrop-blur-xl animate-fade">
-          <div className="bg-white rounded-[3rem] p-10 max-w-sm w-full text-center shadow-2xl animate-scale">
-            <div className="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
-              <i className="fa-solid fa-check-double text-3xl"></i>
-            </div>
-            <h3 className="text-2xl font-bold font-serif text-slate-900 mb-2">{showSuccessModal.type}</h3>
-            <p className="text-slate-400 text-xs font-medium mb-8">Changes were pushed to the production environment instantly.</p>
-            <button onClick={() => setShowSuccessModal({ show: false, type: null })} className="w-full bg-sky-600 text-white font-black py-4 rounded-2xl uppercase text-[10px] tracking-widest shadow-lg active:scale-95 transition-all">Dismiss</button>
-          </div>
-        </div>
-      )}
-
-      {/* DELETE CONFIRMATION MODAL */}
-      {showDeleteConfirm.show && (
-        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-sky-100/70 backdrop-blur-xl animate-fade">
-          <div className="bg-white rounded-[3rem] p-12 max-w-sm w-full text-center shadow-2xl animate-scale">
-            <div className="w-24 h-24 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner">
-              <i className="fa-solid fa-triangle-exclamation text-5xl"></i>
-            </div>
-            <h3 className="text-2xl font-bold font-serif text-slate-900 mb-2">Confirm Removal</h3>
-            <p className="text-slate-500 text-sm mb-10 leading-relaxed">This action will permanently delete <span className="font-bold text-slate-900">{showDeleteConfirm.name}</span> from the cloud registry.</p>
-            <div className="flex gap-4">
-              <button onClick={() => setShowDeleteConfirm({ show: false, id: null, name: null })} className="flex-1 bg-sky-50 text-sky-700 font-black py-5 rounded-2xl uppercase text-[10px] tracking-widest hover:bg-sky-100 transition-all" disabled={isSyncing}>Abort</button>
-              <button onClick={async () => {
-                if (showDeleteConfirm.id) {
-                  try {
-                    setIsSyncing(true);
-                    await onDeleteVilla(showDeleteConfirm.id);
-                    setShowDeleteConfirm({ show: false, id: null, name: null });
-                    setShowSuccessModal({ show: true, type: 'Record Purged' });
-                  } catch (err: any) {
-                    alert(`Purge Failed: ${err.message}`);
-                  } finally {
-                    setIsSyncing(false);
-                  }
-                }
-              }} className="flex-1 bg-red-600 text-white font-black py-5 rounded-2xl uppercase text-[10px] tracking-widest shadow-xl active:scale-95 transition-all" disabled={isSyncing}>Commit</button>
-            </div>
-          </div>
         </div>
       )}
 
@@ -387,12 +258,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                 <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                 Instant Sync: Operational
              </div>
-             <span className="text-sky-400 text-[9px] font-black uppercase tracking-widest">Production Cloud Interface</span>
            </div>
         </div>
-        <div className="bg-sky-100 p-1.5 rounded-2xl flex gap-1">
-          {['inventory', 'inquiries', 'reviews', 'branding'].map(tab => (
-            <button key={tab} onClick={() => setActiveTab(tab as AdminTab)} className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab ? 'bg-white text-sky-900 shadow-md scale-105' : 'text-sky-400 hover:text-sky-600'}`}>
+        <div className="bg-sky-100 p-1.5 rounded-2xl flex gap-1 overflow-x-auto max-w-full">
+          {['inventory', 'inquiries', 'services', 'reviews', 'branding'].map(tab => (
+            <button key={tab} onClick={() => setActiveTab(tab as AdminTab)} className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === tab ? 'bg-white text-sky-900 shadow-md scale-105' : 'text-sky-400 hover:text-sky-600'}`}>
               {tab}
             </button>
           ))}
@@ -404,200 +274,204 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
           <div className="lg:w-[600px] shrink-0 h-full">
             <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-sky-100 h-full overflow-y-auto no-scrollbar scroll-smooth">
               <div className="flex justify-between items-start mb-8 sticky top-0 bg-white pb-4 z-10 border-b border-sky-50">
-                <div>
-                  <h2 className="text-2xl font-bold font-serif text-sky-900">{isEditing ? 'Modify Record' : 'Create Record'}</h2>
-                  <p className="text-[9px] font-black text-sky-400 uppercase tracking-widest mt-1">Status: {isSyncing ? 'Committing...' : 'Idle'}</p>
-                </div>
+                <h2 className="text-2xl font-bold font-serif text-sky-900">{isEditing ? 'Modify Record' : 'Create Record'}</h2>
                 <div className="flex gap-2">
                   {isEditing && (
-                    <button onClick={resetForm} className="p-3 bg-sky-50 text-sky-400 rounded-xl hover:text-sky-900 transition-all">
+                    <button onClick={resetForm} className="p-3 bg-sky-50 text-sky-400 rounded-xl hover:text-sky-900">
                       <i className="fa-solid fa-rotate-left"></i>
                     </button>
                   )}
-                  <div className="flex flex-col items-center">
-                    <button type="button" onClick={() => setFormData({ ...formData, isFeatured: !formData.isFeatured })} className={`w-12 h-6 rounded-full transition-all relative ${formData.isFeatured ? 'bg-sky-500' : 'bg-gray-200'}`}>
-                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${formData.isFeatured ? 'left-7' : 'left-1'}`}></div>
-                    </button>
-                    <span className="text-[7px] font-black uppercase mt-1">Featured</span>
-                  </div>
+                  <button type="button" onClick={() => setFormData({ ...formData, isFeatured: !formData.isFeatured })} className={`w-12 h-6 rounded-full transition-all relative ${formData.isFeatured ? 'bg-sky-500' : 'bg-gray-200'}`}>
+                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${formData.isFeatured ? 'left-7' : 'left-1'}`}></div>
+                  </button>
                 </div>
               </div>
 
               {!isEditing && (
-                <div className="mb-10 bg-sky-50/50 p-6 rounded-[2.5rem] relative overflow-hidden group border border-sky-100">
+                <div className="mb-10 bg-sky-50/50 p-6 rounded-[2.5rem] border border-sky-100">
                   <h4 className="text-[10px] font-black text-sky-900 uppercase tracking-widest mb-4 flex items-center gap-2">
                     <i className="fa-solid fa-wand-magic-sparkles text-sky-600"></i>
-                    AI Record Generator
+                    AI Quick Draft
                   </h4>
                   <div className="flex gap-2">
-                    <input 
-                      type="text" 
-                      placeholder="e.g. 5BHK Pool Villa in Anjuna..."
-                      className="flex-grow bg-white border border-sky-100 rounded-xl px-4 py-3 text-sky-900 text-xs placeholder:text-sky-300 focus:ring-1 focus:ring-sky-500 transition-all outline-none"
-                      value={magicPrompt}
-                      onChange={(e) => setMagicPrompt(e.target.value)}
-                    />
-                    <button 
-                      onClick={handleMagicFill}
-                      disabled={isAiLoading}
-                      className="px-5 bg-sky-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-sky-700 transition-all disabled:opacity-50"
-                    >
-                      {isAiLoading ? <i className="fa-solid fa-spinner fa-spin"></i> : 'Draft'}
+                    <input type="text" placeholder="e.g. 3BHK Lonavala Villa..." className="flex-grow bg-white border border-sky-100 rounded-xl px-4 py-3 text-xs outline-none" value={magicPrompt} onChange={(e) => setMagicPrompt(e.target.value)} />
+                    <button onClick={handleMagicFill} disabled={isAiLoading} className="px-5 bg-sky-600 text-white rounded-xl text-[10px] font-black uppercase">
+                      {isAiLoading ? '...' : 'Draft'}
                     </button>
                   </div>
                 </div>
               )}
 
               <form onSubmit={handleSubmit} className="space-y-8 pb-20">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 px-1">
-                    <i className="fa-solid fa-tag text-[10px] text-sky-500"></i>
-                    <label className="text-[9px] font-black text-sky-400 uppercase tracking-widest">Metadata</label>
-                  </div>
-                  <input type="text" required placeholder="Villa Name" className="w-full px-5 py-4 rounded-2xl bg-sky-50 border border-sky-100 font-bold text-sm focus:ring-2 focus:ring-sky-500 transition-all outline-none" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
-                  <input type="text" required placeholder="Location (City, State)" className="w-full px-5 py-4 rounded-2xl bg-sky-50 border border-sky-100 font-bold text-sm focus:ring-2 focus:ring-sky-500 transition-all outline-none" value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })} />
+                <input type="text" required placeholder="Villa Name" className="w-full px-5 py-4 rounded-2xl bg-sky-50 border border-sky-100 font-bold text-sm outline-none" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+                <input type="text" required placeholder="Location" className="w-full px-5 py-4 rounded-2xl bg-sky-50 border border-sky-100 font-bold text-sm outline-none" value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })} />
+                <div className="grid grid-cols-2 gap-4">
+                  <input type="number" placeholder="Price" className="w-full px-5 py-4 rounded-2xl bg-sky-50 border border-sky-100 text-sm" value={formData.pricePerNight} onChange={(e) => setFormData({ ...formData, pricePerNight: Number(e.target.value) })} />
+                  <input type="number" placeholder="BHK" className="w-full px-5 py-4 rounded-2xl bg-sky-50 border border-sky-100 text-sm" value={formData.bedrooms} onChange={(e) => setFormData({ ...formData, bedrooms: Number(e.target.value), numRooms: Number(e.target.value) })} />
                 </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-[9px] font-black text-sky-400 uppercase tracking-widest px-1">Price (₹)</label>
-                    <input type="number" required className="w-full px-4 py-3 rounded-xl bg-sky-50 border border-sky-100 font-bold text-xs" value={formData.pricePerNight} onChange={(e) => setFormData({ ...formData, pricePerNight: Number(e.target.value) })} />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[9px] font-black text-sky-400 uppercase tracking-widest px-1">Bedrooms</label>
-                    <input type="number" required className="w-full px-4 py-3 rounded-xl bg-sky-50 border border-sky-100 font-bold text-xs" value={formData.bedrooms} onChange={(e) => setFormData({ ...formData, bedrooms: Number(e.target.value), numRooms: Number(e.target.value) })} />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[9px] font-black text-sky-400 uppercase tracking-widest px-1">Bathrooms</label>
-                    <input type="number" required className="w-full px-4 py-3 rounded-xl bg-sky-50 border border-sky-100 font-bold text-xs" value={formData.bathrooms} onChange={(e) => setFormData({ ...formData, bathrooms: Number(e.target.value) })} />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[9px] font-black text-sky-400 uppercase tracking-widest px-1">Capacity</label>
-                    <input type="number" required className="w-full px-4 py-3 rounded-xl bg-sky-50 border border-sky-100 font-bold text-xs" value={formData.capacity} onChange={(e) => setFormData({ ...formData, capacity: Number(e.target.value) })} />
-                  </div>
-                </div>
-
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between px-1">
-                    <label className="text-[9px] font-black text-sky-400 uppercase tracking-widest">Image Catalog</label>
-                    <button type="button" onClick={() => imageInputRef.current?.click()} className="text-[9px] font-black text-sky-600 uppercase tracking-widest flex items-center gap-1 hover:underline">
-                      <i className="fa-solid fa-cloud-arrow-up"></i> Upload
-                    </button>
+                  <div className="flex justify-between items-center">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-sky-400">Gallery</label>
+                    <button type="button" onClick={() => imageInputRef.current?.click()} className="text-[10px] font-black text-sky-600 uppercase underline">Upload</button>
                     <input ref={imageInputRef} type="file" multiple accept="image/*" className="hidden" onChange={handleManualImageUpload} />
                   </div>
-                  <div className="flex overflow-x-auto gap-4 pb-2 no-scrollbar">
+                  <div className="flex overflow-x-auto gap-2 pb-2">
                     {formData.imageUrls?.map((url, i) => (
-                      <div key={i} className="relative w-24 h-24 shrink-0 group">
-                        <img src={url} className="w-full h-full object-cover rounded-xl shadow-md border border-sky-100" alt="" />
-                        <button onClick={() => setFormData({ ...formData, imageUrls: formData.imageUrls?.filter((_, idx) => idx !== i) })} className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs shadow-lg opacity-0 group-hover:opacity-100 transition-all">
-                          <i className="fa-solid fa-xmark"></i>
-                        </button>
+                      <div key={i} className="relative w-20 h-20 shrink-0">
+                        <img src={url} className="w-full h-full object-cover rounded-xl" />
+                        <button onClick={() => setFormData({ ...formData, imageUrls: formData.imageUrls?.filter((_, idx) => idx !== i) })} className="absolute top-0 right-0 bg-red-500 text-white w-5 h-5 rounded-full text-[10px]"><i className="fa-solid fa-xmark"></i></button>
                       </div>
                     ))}
                   </div>
                 </div>
-
-                <div className="space-y-4">
-                  <label className="text-[9px] font-black text-sky-400 uppercase tracking-widest px-1">Video Walkthroughs</label>
-                  <div className="flex gap-2">
-                    <input type="text" placeholder="Direct MP4 URL..." className="flex-grow px-4 py-3 rounded-xl bg-sky-50 border border-sky-100 text-xs" value={newVideoUrl} onChange={(e) => setNewVideoUrl(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddVideo())} />
-                    <button type="button" onClick={handleAddVideo} className="px-4 bg-sky-600 text-white rounded-xl font-black text-[10px] uppercase">Add</button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-4">
-                    <label className="text-[9px] font-black text-sky-400 uppercase tracking-widest px-1">Property Amenities</label>
-                    <div className="flex gap-2">
-                      <input type="text" placeholder="Pool, Gym..." className="flex-grow px-4 py-3 rounded-xl bg-sky-50 border border-sky-100 text-xs font-bold" value={newAmenity} onChange={(e) => setNewAmenity(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddAmenity())} />
-                      <button type="button" onClick={handleAddAmenity} className="px-4 bg-sky-100 text-sky-700 rounded-xl font-black text-[10px] uppercase">Add</button>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {formData.amenities?.map((a, i) => (
-                        <span key={i} className="px-3 py-1.5 bg-sky-100 text-sky-700 rounded-lg text-[10px] font-bold flex items-center gap-2">
-                          {a}
-                          <button onClick={() => setFormData({ ...formData, amenities: formData.amenities?.filter((_, idx) => idx !== i) })} className="hover:text-red-500"><i className="fa-solid fa-xmark"></i></button>
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <label className="text-[9px] font-black text-sky-400 uppercase tracking-widest px-1">Included Services</label>
-                    <div className="flex gap-2">
-                      <input type="text" placeholder="Chef, Butler..." className="flex-grow px-4 py-3 rounded-xl bg-sky-50 border border-sky-100 text-xs font-bold" value={newService} onChange={(e) => setNewService(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddService())} />
-                      <button type="button" onClick={handleAddService} className="px-4 bg-sky-100 text-sky-700 rounded-xl font-black text-[10px] uppercase">Add</button>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {formData.includedServices?.map((s, i) => (
-                        <span key={i} className="px-3 py-1.5 bg-sky-200 text-sky-900 rounded-lg text-[10px] font-bold flex items-center gap-2">
-                          {s}
-                          <button onClick={() => setFormData({ ...formData, includedServices: formData.includedServices?.filter((_, idx) => idx !== i) })} className="hover:text-red-500"><i className="fa-solid fa-xmark"></i></button>
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="sticky bottom-0 pt-10 bg-white border-t border-sky-50">
-                  <button type="submit" disabled={isSyncing} className="w-full bg-sky-600 text-white font-black py-6 rounded-2xl uppercase text-[10px] tracking-widest shadow-2xl active:scale-95 transition-all disabled:opacity-50">
-                    {isSyncing ? <i className="fa-solid fa-spinner fa-spin mr-2"></i> : 'Commit Environmental Changes'}
-                  </button>
-                </div>
+                <button type="submit" disabled={isSyncing} className="w-full bg-sky-600 text-white font-black py-6 rounded-2xl uppercase text-[10px] tracking-widest shadow-xl">
+                  {isSyncing ? 'Syncing...' : 'Commit Changes'}
+                </button>
               </form>
             </div>
           </div>
 
-          <div className="flex-grow h-full">
-            <div className="bg-white rounded-[3.5rem] border border-sky-100 shadow-sm p-8 h-full flex flex-col">
-              <div className="flex justify-between items-center mb-8 shrink-0">
-                <div className="relative flex-grow mr-6">
-                  <i className="fa-solid fa-magnifying-glass absolute left-6 top-1/2 -translate-y-1/2 text-sky-300"></i>
-                  <input type="text" placeholder="Search operational registry..." className="w-full pl-14 pr-6 py-5 bg-sky-50 rounded-[2rem] border-none font-bold text-sm outline-none focus:ring-2 focus:ring-sky-500 transition-all" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-                </div>
-                <button onClick={() => zipInputRef.current?.click()} className="px-6 py-5 bg-sky-100 text-sky-700 rounded-[2rem] text-[10px] font-black uppercase tracking-widest hover:bg-sky-200 transition-all flex items-center gap-3 shadow-sm border border-sky-200">
-                  <i className="fa-solid fa-cloud-arrow-up"></i>
-                  Batch Commit
-                </button>
-                <input ref={zipInputRef} type="file" accept=".zip" className="hidden" onChange={handleBulkZipUpload} />
-              </div>
-
-              <div className="flex-grow overflow-y-auto no-scrollbar scroll-smooth">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-12">
-                  {filteredVillas.map(v => (
-                    <div key={v.id} className="bg-white rounded-[2.5rem] p-6 border border-sky-50 flex gap-6 group hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 hover:border-sky-200">
-                       <img src={v.imageUrls?.[0]} className="w-24 h-24 rounded-[1.5rem] object-cover shadow-md shrink-0 border border-sky-50" alt="" />
-                       <div className="flex-grow min-w-0 text-left">
-                          <h3 className="font-bold text-sky-900 text-base font-serif truncate">{v.name}</h3>
-                          <div className="flex items-center gap-2 mb-1">
-                            <p className="text-[9px] font-black text-sky-400 uppercase tracking-widest truncate">{v.location}</p>
-                            <span className="text-[9px] font-black text-sky-600 font-sans">₹{v.pricePerNight.toLocaleString()}</span>
-                          </div>
-                          <div className="flex gap-2">
-                            <button onClick={() => handleEdit(v)} className="flex-1 py-2 bg-sky-50 text-sky-900 rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-sky-600 hover:text-white transition-all">Modify</button>
-                            <button onClick={() => confirmDeleteVilla(v.id, v.name)} className="px-3 py-2 bg-red-50 text-red-400 rounded-xl hover:bg-red-500 hover:text-white transition-all"><i className="fa-solid fa-trash-can text-[8px]"></i></button>
-                          </div>
-                       </div>
+          <div className="flex-grow h-full overflow-y-auto no-scrollbar">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {filteredVillas.map(v => (
+                <div key={v.id} className="bg-white p-6 rounded-[2.5rem] border border-sky-100 flex gap-6 group hover:shadow-xl transition-all">
+                  <img src={v.imageUrls?.[0]} className="w-24 h-24 rounded-2xl object-cover shrink-0" />
+                  <div className="flex-grow min-w-0">
+                    <h3 className="font-bold text-sky-900 truncate">{v.name}</h3>
+                    <p className="text-[10px] font-black text-sky-400 uppercase tracking-widest truncate">{v.location}</p>
+                    <div className="flex gap-2 mt-4">
+                      <button onClick={() => handleEdit(v)} className="flex-1 py-2 bg-sky-50 text-sky-900 rounded-xl text-[8px] font-black uppercase">Modify</button>
+                      <button onClick={() => onDeleteVilla(v.id)} className="px-3 py-2 bg-red-50 text-red-500 rounded-xl"><i className="fa-solid fa-trash-can"></i></button>
                     </div>
-                  ))}
+                  </div>
                 </div>
-              </div>
+              ))}
             </div>
           </div>
         </div>
       )}
 
+      {activeTab === 'inquiries' && (
+        <div className="bg-white p-12 rounded-[3.5rem] border border-sky-100 shadow-sm animate-reveal h-[calc(100vh-280px)] overflow-y-auto no-scrollbar">
+          <h2 className="text-3xl font-bold font-serif text-sky-900 mb-12">Guest Inquiry Registry</h2>
+          <div className="space-y-4">
+            {leads.map(lead => (
+              <div key={lead.id} className="bg-sky-50/50 p-8 rounded-[2.5rem] border border-sky-100 flex justify-between items-center gap-6">
+                <div className="flex items-center gap-6">
+                   <div className={`w-3 h-3 rounded-full ${getStatusColor(lead.status)} shadow-lg shadow-sky-200`}></div>
+                   <div>
+                     <h3 className="text-xl font-bold text-sky-900">{lead.villaName}</h3>
+                     <p className="text-[10px] font-black uppercase text-sky-400 tracking-widest mt-1">
+                       {lead.customerName || 'Anonymous Guest'} • {new Date(lead.timestamp).toLocaleDateString()}
+                     </p>
+                   </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <select 
+                    value={lead.status}
+                    onChange={(e) => handleUpdateLead(lead.id, e.target.value as any)}
+                    className="bg-white border-none rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-sky-900 shadow-sm outline-none"
+                  >
+                    <option value="new">New</option>
+                    <option value="contacted">Contacted</option>
+                    <option value="booked">Booked</option>
+                    <option value="lost">Lost</option>
+                  </select>
+                  <button onClick={() => deleteLead(lead.id)} className="p-3 text-red-400 hover:text-red-600 transition-colors">
+                    <i className="fa-solid fa-trash-can"></i>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'services' && (
+        <div className="flex flex-col lg:flex-row gap-12 h-[calc(100vh-280px)] overflow-hidden">
+           <div className="lg:w-[400px] shrink-0 bg-white p-10 rounded-[3rem] shadow-xl border border-sky-100 overflow-y-auto">
+              <h2 className="text-2xl font-bold font-serif text-sky-900 mb-8">{editingServiceId ? 'Edit Service' : 'Add New Service'}</h2>
+              <form onSubmit={handleServiceSubmit} className="space-y-6">
+                 <div>
+                    <label className="text-[10px] font-black text-sky-400 uppercase tracking-widest block mb-2">Service Title</label>
+                    <input required type="text" className="w-full p-4 bg-sky-50 rounded-2xl outline-none font-bold text-sm" value={serviceFormData.title} onChange={e => setServiceFormData({...serviceFormData, title: e.target.value})} />
+                 </div>
+                 <div>
+                    <label className="text-[10px] font-black text-sky-400 uppercase tracking-widest block mb-2">Icon Class (FA)</label>
+                    <div className="flex gap-3">
+                       <div className="w-12 h-12 bg-sky-50 rounded-xl flex items-center justify-center text-sky-600">
+                          <i className={`fa-solid ${serviceFormData.icon}`}></i>
+                       </div>
+                       <input required type="text" className="flex-grow p-4 bg-sky-50 rounded-2xl outline-none font-bold text-sm" value={serviceFormData.icon} onChange={e => setServiceFormData({...serviceFormData, icon: e.target.value})} />
+                    </div>
+                 </div>
+                 <div>
+                    <label className="text-[10px] font-black text-sky-400 uppercase tracking-widest block mb-2">Description</label>
+                    <textarea className="w-full p-4 bg-sky-50 rounded-2xl outline-none font-medium text-sm" rows={4} value={serviceFormData.description} onChange={e => setServiceFormData({...serviceFormData, description: e.target.value})} />
+                 </div>
+                 <button type="submit" disabled={isSyncing} className="w-full bg-sky-900 text-white font-black py-5 rounded-2xl uppercase text-[10px] tracking-widest shadow-xl">
+                   {editingServiceId ? 'Update Service' : 'Publish Service'}
+                 </button>
+                 {editingServiceId && (
+                   <button type="button" onClick={() => { setEditingServiceId(null); setServiceFormData({ title: '', description: '', icon: 'fa-concierge-bell' }); }} className="w-full text-[10px] font-black text-sky-400 uppercase tracking-widest">Cancel</button>
+                 )}
+              </form>
+           </div>
+           <div className="flex-grow overflow-y-auto no-scrollbar">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 {managedServices.map(service => (
+                   <div key={service.id} className="bg-white p-8 rounded-[3rem] border border-sky-100 flex gap-6 hover:shadow-xl transition-all">
+                      <div className="w-16 h-16 bg-sky-50 rounded-2xl flex items-center justify-center text-sky-600 text-2xl shrink-0">
+                         <i className={`fa-solid ${service.icon}`}></i>
+                      </div>
+                      <div className="flex-grow min-w-0">
+                         <h4 className="font-bold text-sky-900 truncate">{service.title}</h4>
+                         <p className="text-xs text-sky-400 line-clamp-2 mt-1">{service.description}</p>
+                         <div className="flex gap-4 mt-4">
+                            <button onClick={() => { setEditingServiceId(service.id); setServiceFormData(service); }} className="text-[10px] font-black text-sky-600 uppercase tracking-widest">Edit</button>
+                            <button onClick={() => deleteService(service.id)} className="text-[10px] font-black text-red-400 uppercase tracking-widest">Delete</button>
+                         </div>
+                      </div>
+                   </div>
+                 ))}
+              </div>
+           </div>
+        </div>
+      )}
+
+      {activeTab === 'reviews' && (
+        <div className="bg-white p-12 rounded-[3.5rem] border border-sky-100 shadow-sm animate-reveal overflow-y-auto h-[calc(100vh-280px)] no-scrollbar">
+           <h2 className="text-3xl font-bold font-serif text-sky-900 mb-12">Public Memoirs Control</h2>
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+             {managedReviews.map(review => (
+               <div key={review.id} className="bg-sky-50/30 p-8 rounded-[2.5rem] border border-sky-50 relative group">
+                  <div className="flex items-center gap-4 mb-6">
+                    <img src={review.avatar} className="w-12 h-12 rounded-xl" />
+                    <div>
+                      <h4 className="font-bold text-sky-900">{review.name}</h4>
+                      <div className="flex text-orange-400 text-[8px] gap-0.5">
+                        {[...Array(review.rating)].map((_, i) => <i key={i} className="fa-solid fa-star"></i>)}
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-xs text-sky-700 leading-relaxed font-medium mb-8">"{review.content}"</p>
+                  <button onClick={() => deleteTestimonial(review.id)} className="absolute top-6 right-6 w-8 h-8 bg-red-50 text-red-400 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-500 hover:text-white transition-all">
+                    <i className="fa-solid fa-trash-can"></i>
+                  </button>
+               </div>
+             ))}
+           </div>
+        </div>
+      )}
+
       {activeTab === 'branding' && (
         <div className="bg-white p-12 rounded-[3.5rem] border border-sky-100 shadow-sm animate-reveal overflow-y-auto h-[calc(100vh-280px)] no-scrollbar">
-           <h2 className="text-4xl font-bold font-serif mb-12 text-sky-900">Production Branding Access</h2>
-           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-              <div className="space-y-8">
-                <h3 className="text-xl font-bold font-serif text-sky-800">Global Broadcast Message</h3>
-                <div className="space-y-4">
-                  <label className="text-[10px] font-black text-sky-400 uppercase tracking-widest">Active Marquee Content</label>
-                  <textarea value={promoText} onChange={(e) => setPromoText(e.target.value)} className="w-full p-6 bg-sky-50 rounded-3xl border border-sky-100 font-bold text-sm focus:ring-2 focus:ring-sky-500 outline-none" rows={3} />
-                  <button onClick={handlePromoSave} className="px-8 py-4 bg-sky-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-sky-700 transition-all">Commit Broadcast</button>
-                </div>
+           <h2 className="text-4xl font-bold font-serif mb-12 text-sky-900">Identity Control</h2>
+           <div className="max-w-xl space-y-8">
+              <div className="space-y-4">
+                <label className="text-[10px] font-black text-sky-400 uppercase tracking-widest">Marquee Broadcast</label>
+                <textarea value={promoText} onChange={(e) => setPromoText(e.target.value)} className="w-full p-6 bg-sky-50 rounded-3xl border border-sky-100 font-bold text-sm outline-none" rows={3} />
+                <button onClick={async () => { await updateSettings({ promoText }); alert('Broadcast Pushed!'); }} className="px-8 py-4 bg-sky-600 text-white rounded-2xl text-[10px] font-black uppercase shadow-lg">Commit Broadcast</button>
               </div>
            </div>
         </div>

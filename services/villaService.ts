@@ -85,7 +85,8 @@ const mapToDb = (v: Partial<Villa>) => {
   if (v.petFriendly !== undefined) payload.pet_friendly = Boolean(v.petFriendly);
   if (v.refundPolicy !== undefined) payload.refund_policy = v.refundPolicy;
   if (v.rating !== undefined) payload.rating = Number(v.rating);
-  if (v.ratingCount !== undefined) payload.rating_count = Number(v.rating_count);
+  // Fixed typo: using v.ratingCount instead of v.rating_count which doesn't exist on Partial<Villa>
+  if (v.ratingCount !== undefined) payload.rating_count = Number(v.ratingCount);
   return payload;
 };
 
