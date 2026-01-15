@@ -16,9 +16,12 @@ const generateUUID = () => {
   });
 };
 
-const isValidUUID = (id: string) => {
-  const regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  return regex.test(id);
+const isValidUUID = (id: any): boolean => {
+  if (!id || typeof id !== 'string') return false;
+  // Robust standard UUID regex: 8-4-4-4-12 format with optional whitespace handling
+  const cleanedId = id.trim();
+  const regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return regex.test(cleanedId);
 };
 
 const fileToBase64 = (file: File): Promise<string> => {
@@ -108,7 +111,6 @@ const mapToDb = (v: Partial<Villa>) => {
   if (v.longDescription !== undefined) payload.long_description = v.longDescription;
   
   if (v.imageUrls !== undefined) {
-    // CRITICAL: Ensure we only save public URLs or data URIs. 
     payload.image_urls = v.imageUrls.filter(url => url && (url.startsWith('http') || url.startsWith('data:')));
   }
   
@@ -121,7 +123,6 @@ const mapToDb = (v: Partial<Villa>) => {
   if (v.isFeatured !== undefined) payload.is_featured = Boolean(v.isFeatured);
   if (v.numRooms !== undefined) payload.num_rooms = Number(v.numRooms);
   if (v.mealsAvailable !== undefined) payload.meals_available = Boolean(v.mealsAvailable);
-  // Fix: changed v.pet_friendly to v.petFriendly to match the Villa interface defined in types.ts
   if (v.petFriendly !== undefined) payload.pet_friendly = Boolean(v.petFriendly);
   if (v.refundPolicy !== undefined) payload.refund_policy = v.refundPolicy;
   if (v.rating !== undefined) payload.rating = Number(v.rating);
@@ -193,8 +194,9 @@ export const deleteVillaById = async (id: string): Promise<void> => {
     saveLocalVillas(localVillas.filter(v => v.id !== id));
     return;
   }
-  if (!isValidUUID(id)) return;
-  const { error } = await supabase.from(TABLE).delete().eq('id', id);
+  const cleanedId = id?.trim();
+  if (!isValidUUID(cleanedId)) return;
+  const { error } = await supabase.from(TABLE).delete().eq('id', cleanedId);
   if (error) throw handleDbError(error, TABLE);
 };
 
