@@ -51,17 +51,22 @@ const saveLocalVillas = (villas: Villa[]) => {
 };
 
 const mapFromDb = (v: any): Villa => {
-  // Resilient handling of different schema versions for images
+  // Defensive mapping for images from different potential storage structures
   let imageUrls: string[] = [];
   if (Array.isArray(v.image_urls)) {
     imageUrls = v.image_urls;
   } else if (v.image_urls && typeof v.image_urls === 'string') {
-    imageUrls = v.image_urls.split(',').filter(Boolean);
+    // Handle potential stringified arrays or comma-separated lists
+    try {
+        const parsed = JSON.parse(v.image_urls);
+        imageUrls = Array.isArray(parsed) ? parsed : [v.image_urls];
+    } catch (e) {
+        imageUrls = v.image_urls.split(',').map(s => s.trim()).filter(Boolean);
+    }
   } else if (v.image_url) {
     imageUrls = [v.image_url];
   }
 
-  // Resilient handling of different schema versions for videos
   let videoUrls: string[] = [];
   if (Array.isArray(v.video_urls)) {
     videoUrls = v.video_urls;
@@ -106,7 +111,6 @@ const mapToDb = (v: Partial<Villa>) => {
   
   if (v.imageUrls !== undefined) {
     // CRITICAL: Ensure we only save public URLs or data URIs. 
-    // This prevents temporary local 'blob:' URLs from being persisted.
     payload.image_urls = v.imageUrls.filter(url => url.startsWith('http') || url.startsWith('data:'));
   }
   

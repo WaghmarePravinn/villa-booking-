@@ -275,7 +275,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                  <div className="h-full bg-slate-900 transition-all duration-300" style={{ width: `${progress.percentage}%` }}></div>
                </div>
              )}
-             {progress.error && <p className="text-[10px] font-bold text-red-500 mt-4 leading-relaxed">{progress.error}</p>}
+             {progress.error && <p className="text-[10px] font-bold text-red-500 mt-4 leading-relaxed whitespace-pre-wrap">{progress.error}</p>}
           </div>
         </div>
       )}
@@ -380,7 +380,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                          <img src={url} className="w-full h-full object-cover" alt="" />
                          <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
                             <button type="button" onClick={() => handleMediaPicker('image', i)} className="text-white hover:text-sky-400"><i className="fa-solid fa-arrows-rotate text-xs"></i></button>
-                            <button type="button" onClick={() => setFormData({...prev => ({ ...prev, imageUrls: prev.imageUrls?.filter((_, idx) => idx !== i) })})} className="text-white hover:text-red-400"><i className="fa-solid fa-trash text-xs"></i></button>
+                            <button type="button" onClick={() => setFormData(prev => ({ ...prev, imageUrls: prev.imageUrls?.filter((_, idx) => idx !== i) }))} className="text-white hover:text-red-400"><i className="fa-solid fa-trash text-xs"></i></button>
                          </div>
                       </div>
                     ))}
@@ -417,7 +417,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                  {filteredVillas.map(v => (
                    <div key={v.id} className="bg-slate-50/50 p-6 rounded-[2.5rem] border border-slate-100 flex gap-6 group hover:bg-white hover:shadow-xl transition-all">
                       <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 shadow-inner">
-                        <img src={v.imageUrls[0]} className="w-full h-full object-cover" alt="" />
+                        <img src={v.imageUrls?.[0] || 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80&w=400'} className="w-full h-full object-cover" alt="" />
                       </div>
                       <div className="flex-grow min-w-0">
                          <h3 className="font-bold text-slate-900 truncate">{v.name}</h3>
