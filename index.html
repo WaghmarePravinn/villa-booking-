@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <title>Peak Stay | Luxury Villa Collection</title>
     <meta name="theme-color" content="#0ea5e9">
     <link rel="manifest" href="/manifest.json">
@@ -13,74 +13,47 @@
     <style>
         :root {
             --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-            --t-primary: #0284c7; /* Sky 600 */
+            --t-primary: #0284c7;
             --t-accent: #f59e0b;
-            --t-secondary: #0ea5e9; /* Sky 500 */
+            --t-secondary: #0ea5e9;
             --t-bg: #f8fafc;
             --t-card-bg: #ffffff;
-            --t-text: #0c4a6e; /* Sky 900 - Soft but readable */
+            --t-text: #0c4a6e;
             --t-marquee-bg: #0284c7;
             --t-marquee-text: #ffffff;
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.5);
         }
 
-        /* Patriotic Themes (Republic Day / Independence Day) */
         .theme-REPUBLIC_DAY, .theme-INDEPENDENCE_DAY {
             --t-primary: #FF9933;
             --t-accent: #128807;
             --t-secondary: #000080;
-            --t-bg: #f0f9ff;
-            --t-card-bg: #ffffff;
+            --t-bg: #fffbf7;
             --t-text: #1e3a8a;
             --t-marquee-bg: #FF9933;
-            --t-marquee-text: #ffffff;
         }
 
-        /* Holi Theme - Vibrance and Neon */
         .theme-HOLI {
             --t-primary: #ec4899;
             --t-accent: #eab308;
             --t-secondary: #06b6d4;
             --t-bg: #fdf2f8;
-            --t-card-bg: #ffffff;
             --t-text: #831843;
             --t-marquee-bg: #db2777;
-            --t-marquee-text: #ffffff;
         }
 
-        /* Diwali Theme - Gold and Warmth */
         .theme-DIWALI {
             --t-primary: #7c2d12;
             --t-accent: #f59e0b;
             --t-secondary: #92400e;
             --t-bg: #fff7ed;
-            --t-card-bg: #ffffff;
             --t-text: #431407;
             --t-marquee-bg: #7c2d12;
-            --t-marquee-text: #fde68a;
         }
 
-        /* Summer Theme - Tropical and Bright */
-        .theme-SUMMER {
-            --t-primary: #0ea5e9;
-            --t-accent: #fbbf24;
-            --t-secondary: #10b981;
-            --t-bg: #f0f9ff;
-            --t-card-bg: #ffffff;
-            --t-text: #0c4a6e;
-            --t-marquee-bg: #0ea5e9;
-            --t-marquee-text: #ffffff;
-        }
-
-        /* Winter Theme - Cool and Elegant */
-        .theme-WINTER {
-            --t-primary: #1e293b;
-            --t-accent: #38bdf8;
-            --t-secondary: #94a3b8;
-            --t-bg: #f1f5f9;
-            --t-card-bg: #ffffff;
-            --t-text: #0f172a;
-            --t-marquee-bg: #1e293b;
-            --t-marquee-text: #e2e8f0;
+        html {
+            scroll-behavior: smooth;
         }
 
         body {
@@ -88,12 +61,20 @@
             -webkit-font-smoothing: antialiased;
             background-color: var(--t-bg);
             color: var(--t-text);
-            transition: background-color 0.8s ease, color 0.8s ease;
+            transition: background-color 0.8s var(--ease-out-expo), color 0.8s var(--ease-out-expo);
             overflow-x: hidden;
+            width: 100%;
         }
 
-        h1, h2, h3, .font-serif {
+        h1, h2, h3, h4, .font-serif {
             font-family: 'Playfair Display', serif;
+        }
+
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border: 1px solid var(--glass-border);
         }
 
         .text-theme-shimmer {
@@ -101,59 +82,68 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-size: 200% auto;
-            animation: shimmer 4s linear infinite;
+            animation: shimmer 5s linear infinite;
         }
 
-        @keyframes shimmer {
-            to { background-position: 200% center; }
+        @keyframes shimmer { to { background-position: 200% center; } }
+
+        .soft-shadow {
+            box-shadow: 0 10px 40px -10px rgba(2, 132, 199, 0.08), 
+                        0 20px 25px -5px rgba(2, 132, 199, 0.03);
         }
 
-        @keyframes popup-bounce {
-            0% { transform: scale(0.5) translateY(100px); opacity: 0; }
-            50% { transform: scale(1.05) translateY(-10px); opacity: 1; }
-            100% { transform: scale(1) translateY(0); opacity: 1; }
-        }
-
-        @keyframes chakra-spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        .animate-popup { animation: popup-bounce 0.8s var(--ease-out-expo) forwards; }
-        .animate-chakra { animation: chakra-spin 10s linear infinite; }
-        
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(20px) saturate(180%);
-            -webkit-backdrop-filter: blur(20px) saturate(180%);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-        }
-
-        .theme-btn {
+        .premium-btn {
             background: var(--t-primary);
-            color: white;
-            transition: all 0.3s ease;
+            color: white !important;
+            transition: all 0.4s var(--ease-out-expo);
+            position: relative;
+            overflow: hidden;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
-        .theme-btn:hover {
+        .premium-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            opacity: 0.9;
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15);
+            filter: brightness(1.1);
         }
+        .premium-btn:active { transform: translateY(1px); }
 
-        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: var(--t-bg); }
-        ::-webkit-scrollbar-thumb { background: var(--t-primary); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--t-primary); }
 
-        .float-animation { animation: floating 3s ease-in-out infinite; }
-        @keyframes floating {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-            100% { transform: translateY(0px); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        @keyframes reveal {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-reveal { animation: reveal 1s var(--ease-out-expo) forwards; }
+
+        @keyframes fade-in {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .animate-fade { animation: fade-in 0.8s var(--ease-out-expo) forwards; }
+
+        @keyframes popup {
+            from { opacity: 0; transform: scale(0.9) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .animate-popup { animation: popup 0.5s var(--ease-out-expo) forwards; }
+
+        /* Ensure mobile buttons have adequate touch area */
+        button, a {
+            min-height: 44px;
+            min-width: 44px;
         }
 
-        /* Generic transition for elements using variables */
         * {
-            transition: border-color 0.3s ease, background-color 0.3s ease;
+            transition: border-color 0.3s ease, background-color 0.3s ease, transform 0.3s var(--ease-out-expo);
+            -webkit-tap-highlight-color: transparent;
         }
     </style>
 <script type="importmap">
