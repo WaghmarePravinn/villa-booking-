@@ -6,16 +6,22 @@ export const handleDbError = (error: any, tableName: string) => {
   const msg = rawMsg.toLowerCase();
   
   // Storage specific errors
-  if (msg.includes("bucket") || (msg.includes("not found") && tableName === 'storage')) {
-    return new Error(`[STORAGE SETUP REQUIRED]
+  if (tableName === 'storage' && (msg.includes("bucket") || msg.includes("not found") || msg.includes("forbidden") || msg.includes("policy"))) {
+    return new Error(`[SUPABASE STORAGE SETUP REQUIRED]
     
-The "villa-media" bucket does not exist. 
-1. Go to your Supabase Dashboard.
-2. Navigate to "Storage" in the left sidebar.
-3. Click "New Bucket".
-4. Name it exactly: villa-media
-5. Set it to "Public".
-6. Save and try uploading again.`);
+The "villa-media" bucket is missing or restricted. 
+Please run this in your Supabase SQL Editor:
+
+-- 1. Create the bucket
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('villa-media', 'villa-media', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- 2. Enable Public Access & Uploads (RLS)
+CREATE POLICY "Public Access" ON storage.objects FOR SELECT USING (bucket_id = 'villa-media');
+CREATE POLICY "Public Upload" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'villa-media');
+CREATE POLICY "Public Update" ON storage.objects FOR UPDATE USING (bucket_id = 'villa-media');
+CREATE POLICY "Public Delete" ON storage.objects FOR DELETE USING (bucket_id = 'villa-media');`);
   }
 
   // Database specific errors (RLS / Missing Tables / Missing Columns)
@@ -56,7 +62,7 @@ CREATE TABLE IF NOT EXISTS services (id uuid DEFAULT gen_random_uuid() PRIMARY K
 CREATE TABLE IF NOT EXISTS leads (id uuid DEFAULT gen_random_uuid() PRIMARY KEY, villa_id uuid, villa_name text, customer_name text, user_id uuid, source text DEFAULT 'Direct Inquiry', status text DEFAULT 'new', check_in date, check_out date, created_at timestamptz DEFAULT now());
 CREATE TABLE IF NOT EXISTS site_settings (id int PRIMARY KEY, active_theme text DEFAULT 'DEFAULT', promo_text text, whatsapp_number text, contact_email text, contact_phone text);
 
--- 2. Add missing columns to existing site_settings (Fixes your current error)
+-- 2. Add missing columns to existing site_settings
 ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS whatsapp_number text;
 ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS contact_email text;
 ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS contact_phone text;

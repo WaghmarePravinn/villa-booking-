@@ -50,30 +50,28 @@ const saveLocalVillas = (villas: Villa[]) => {
   window.dispatchEvent(new CustomEvent(UPDATE_EVENT, { detail: villas }));
 };
 
+const parsePostgresArray = (str: any): string[] => {
+  if (Array.isArray(str)) return str;
+  if (!str || typeof str !== 'string') return [];
+  
+  // Handle Postgres string representation of arrays: {"item1","item2"}
+  if (str.startsWith('{') && str.endsWith('}')) {
+    return str
+      .substring(1, str.length - 1)
+      .split(',')
+      .map(item => item.replace(/^"|"$/g, '').trim())
+      .filter(Boolean);
+  }
+  
+  try {
+    const parsed = JSON.parse(str);
+    return Array.isArray(parsed) ? parsed : [str];
+  } catch (e) {
+    return str.split(',').map(s => s.trim()).filter(Boolean);
+  }
+};
+
 const mapFromDb = (v: any): Villa => {
-  // Defensive mapping for images from different potential storage structures
-  let imageUrls: string[] = [];
-  if (Array.isArray(v.image_urls)) {
-    imageUrls = v.image_urls;
-  } else if (v.image_urls && typeof v.image_urls === 'string') {
-    // Handle potential stringified arrays or comma-separated lists
-    try {
-        const parsed = JSON.parse(v.image_urls);
-        imageUrls = Array.isArray(parsed) ? parsed : [v.image_urls];
-    } catch (e) {
-        imageUrls = v.image_urls.split(',').map(s => s.trim()).filter(Boolean);
-    }
-  } else if (v.image_url) {
-    imageUrls = [v.image_url];
-  }
-
-  let videoUrls: string[] = [];
-  if (Array.isArray(v.video_urls)) {
-    videoUrls = v.video_urls;
-  } else if (v.video_url) {
-    videoUrls = [v.video_url];
-  }
-
   return {
     id: v.id,
     name: v.name || "Unnamed Property",
@@ -84,10 +82,10 @@ const mapFromDb = (v: any): Villa => {
     capacity: Number(v.capacity ?? 0),
     description: v.description || "",
     longDescription: v.long_description || "",
-    imageUrls: imageUrls,
-    videoUrls: videoUrls,
-    amenities: Array.isArray(v.amenities) ? v.amenities : [],
-    includedServices: Array.isArray(v.included_services) ? v.included_services : [],
+    imageUrls: parsePostgresArray(v.image_urls || v.image_url),
+    videoUrls: parsePostgresArray(v.video_urls || v.video_url),
+    amenities: Array.isArray(v.amenities) ? v.amenities : parsePostgresArray(v.amenities),
+    includedServices: Array.isArray(v.included_services) ? v.included_services : parsePostgresArray(v.included_services),
     isFeatured: Boolean(v.is_featured),
     rating: Number(v.rating ?? 5),
     ratingCount: Number(v.rating_count ?? 0),
@@ -111,11 +109,11 @@ const mapToDb = (v: Partial<Villa>) => {
   
   if (v.imageUrls !== undefined) {
     // CRITICAL: Ensure we only save public URLs or data URIs. 
-    payload.image_urls = v.imageUrls.filter(url => url.startsWith('http') || url.startsWith('data:'));
+    payload.image_urls = v.imageUrls.filter(url => url && (url.startsWith('http') || url.startsWith('data:')));
   }
   
   if (v.videoUrls !== undefined) {
-    payload.video_urls = v.videoUrls.filter(url => url.startsWith('http') || url.startsWith('data:'));
+    payload.video_urls = v.videoUrls.filter(url => url && (url.startsWith('http') || url.startsWith('data:')));
   }
   
   if (v.amenities !== undefined) payload.amenities = v.amenities;
@@ -123,6 +121,7 @@ const mapToDb = (v: Partial<Villa>) => {
   if (v.isFeatured !== undefined) payload.is_featured = Boolean(v.isFeatured);
   if (v.numRooms !== undefined) payload.num_rooms = Number(v.numRooms);
   if (v.mealsAvailable !== undefined) payload.meals_available = Boolean(v.mealsAvailable);
+  // Fix: changed v.pet_friendly to v.petFriendly to match the Villa interface defined in types.ts
   if (v.petFriendly !== undefined) payload.pet_friendly = Boolean(v.petFriendly);
   if (v.refundPolicy !== undefined) payload.refund_policy = v.refundPolicy;
   if (v.rating !== undefined) payload.rating = Number(v.rating);
@@ -210,7 +209,10 @@ export const uploadMedia = async (file: File, folder: 'images' | 'videos', onPro
   const filePath = `${folder}/${fileName}`;
   
   try {
-    const { error } = await supabase.storage.from('villa-media').upload(filePath, file);
+    const { error } = await supabase.storage.from('villa-media').upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: false
+    });
     if (error) throw handleDbError(error, 'storage');
     
     if (onProgress) onProgress(100);

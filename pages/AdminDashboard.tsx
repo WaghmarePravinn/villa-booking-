@@ -417,7 +417,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                  {filteredVillas.map(v => (
                    <div key={v.id} className="bg-slate-50/50 p-6 rounded-[2.5rem] border border-slate-100 flex gap-6 group hover:bg-white hover:shadow-xl transition-all">
                       <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 shadow-inner">
-                        <img src={v.imageUrls?.[0] || 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80&w=400'} className="w-full h-full object-cover" alt="" />
+                        <img 
+                          src={(v.imageUrls && v.imageUrls.length > 0) ? v.imageUrls[0] : 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80&w=400'} 
+                          className="w-full h-full object-cover" 
+                          alt="" 
+                          onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80&w=400'; }}
+                        />
                       </div>
                       <div className="flex-grow min-w-0">
                          <h3 className="font-bold text-slate-900 truncate">{v.name}</h3>
