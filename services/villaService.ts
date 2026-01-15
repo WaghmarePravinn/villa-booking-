@@ -51,15 +51,17 @@ const saveLocalVillas = (villas: Villa[]) => {
 };
 
 const mapFromDb = (v: any): Villa => {
+  // Resilient handling of different schema versions for images
   let imageUrls: string[] = [];
   if (Array.isArray(v.image_urls)) {
     imageUrls = v.image_urls;
   } else if (v.image_urls && typeof v.image_urls === 'string') {
-    imageUrls = [v.image_urls];
+    imageUrls = v.image_urls.split(',').filter(Boolean);
   } else if (v.image_url) {
     imageUrls = [v.image_url];
   }
 
+  // Resilient handling of different schema versions for videos
   let videoUrls: string[] = [];
   if (Array.isArray(v.video_urls)) {
     videoUrls = v.video_urls;
@@ -71,23 +73,23 @@ const mapFromDb = (v: any): Villa => {
     id: v.id,
     name: v.name || "Unnamed Property",
     location: v.location || "Unknown Location",
-    pricePerNight: Number(v.price_per_night ?? v.pricePerNight ?? 0),
+    pricePerNight: Number(v.price_per_night ?? 0),
     bedrooms: Number(v.bedrooms ?? 0),
     bathrooms: Number(v.bathrooms ?? 0),
     capacity: Number(v.capacity ?? 0),
     description: v.description || "",
-    longDescription: v.long_description || v.longDescription || "",
+    longDescription: v.long_description || "",
     imageUrls: imageUrls,
     videoUrls: videoUrls,
     amenities: Array.isArray(v.amenities) ? v.amenities : [],
     includedServices: Array.isArray(v.included_services) ? v.included_services : [],
-    isFeatured: Boolean(v.is_featured ?? v.isFeatured ?? false),
+    isFeatured: Boolean(v.is_featured),
     rating: Number(v.rating ?? 5),
-    ratingCount: Number(v.rating_count ?? v.ratingCount ?? 0),
-    numRooms: Number(v.num_rooms ?? v.numRooms ?? v.bedrooms ?? 0),
-    mealsAvailable: Boolean(v.meals_available ?? v.mealsAvailable ?? false),
-    petFriendly: Boolean(v.pet_friendly ?? v.petFriendly ?? false),
-    refundPolicy: v.refund_policy || v.refundPolicy || ""
+    ratingCount: Number(v.rating_count ?? 0),
+    numRooms: Number(v.num_rooms ?? v.bedrooms ?? 0),
+    mealsAvailable: Boolean(v.meals_available),
+    petFriendly: Boolean(v.pet_friendly),
+    refundPolicy: v.refund_policy || ""
   };
 };
 
@@ -103,7 +105,8 @@ const mapToDb = (v: Partial<Villa>) => {
   if (v.longDescription !== undefined) payload.long_description = v.longDescription;
   
   if (v.imageUrls !== undefined) {
-    // Only persist Cloud URLs (http) or Base64 (data:). Filter temporary Blobs.
+    // CRITICAL: Ensure we only save public URLs or data URIs. 
+    // This prevents temporary local 'blob:' URLs from being persisted.
     payload.image_urls = v.imageUrls.filter(url => url.startsWith('http') || url.startsWith('data:'));
   }
   
@@ -127,13 +130,8 @@ export const subscribeToVillas = (callback: (villas: Villa[]) => void) => {
   if (!isSupabaseAvailable) {
     callback(getLocalVillas());
     const handleUpdate = (e: any) => callback(e.detail || getLocalVillas());
-    const handleStorage = () => callback(getLocalVillas());
     window.addEventListener(UPDATE_EVENT, handleUpdate);
-    window.addEventListener('storage', handleStorage);
-    return () => {
-      window.removeEventListener(UPDATE_EVENT, handleUpdate);
-      window.removeEventListener('storage', handleStorage);
-    };
+    return () => window.removeEventListener(UPDATE_EVENT, handleUpdate);
   }
 
   const fetchVillas = async () => {
@@ -149,9 +147,7 @@ export const subscribeToVillas = (callback: (villas: Villa[]) => void) => {
 
   fetchVillas();
   const channel = supabase.channel('catalog-realtime')
-    .on('postgres_changes', { event: '*', schema: 'public', table: TABLE }, () => {
-      fetchVillas();
-    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: TABLE }, () => fetchVillas())
     .subscribe();
     
   return () => { supabase.removeChannel(channel); };
@@ -182,8 +178,7 @@ export const updateVillaById = async (id: string, villa: Partial<Villa>): Promis
     return;
   }
   
-  if (!isValidUUID(id)) throw new Error(`The ID "${id}" is not a valid UUID.`);
-
+  if (!isValidUUID(id)) throw new Error(`Invalid UUID: ${id}`);
   const payload = mapToDb(villa);
   const { error } = await supabase.from(TABLE).update(payload).eq('id', id);
   if (error) throw handleDbError(error, TABLE);
@@ -218,36 +213,17 @@ export const uploadMedia = async (file: File, folder: 'images' | 'videos', onPro
     const { data: { publicUrl } } = supabase.storage.from('villa-media').getPublicUrl(filePath);
     return publicUrl;
   } catch (err: any) {
-    console.error("Storage Error:", err);
     throw err;
   }
 };
 
 export const verifyCloudConnectivity = async () => {
-  if (!isSupabaseAvailable) return { 
-    db: false, 
-    storage: false, 
-    dbError: 'Supabase Key Missing', 
-    storageError: 'Supabase Key Missing' 
-  };
-  
-  const results = { db: false, storage: false, dbError: null as any, storageError: null as any };
-  
+  if (!isSupabaseAvailable) return { db: false, storage: false };
   try {
-    const { error } = await supabase.from(TABLE).select('id', { count: 'exact', head: true });
-    if (error) throw error;
-    results.db = true;
-  } catch (e: any) {
-    results.dbError = e.message;
+    const dbCheck = await supabase.from(TABLE).select('id', { count: 'exact', head: true });
+    const storageCheck = await supabase.storage.getBucket('villa-media');
+    return { db: !dbCheck.error, storage: !storageCheck.error };
+  } catch (e) {
+    return { db: false, storage: false };
   }
-  
-  try {
-    const { data, error } = await supabase.storage.getBucket('villa-media');
-    if (error) throw error;
-    results.storage = !!data;
-  } catch (e: any) {
-    results.storageError = e.message;
-  }
-  
-  return results;
 };

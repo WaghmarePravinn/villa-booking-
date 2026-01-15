@@ -4,6 +4,7 @@ import { Lead } from "../types";
 import { handleDbError } from "./errorUtils";
 
 const TABLE = "leads";
+const LOCAL_STORAGE_KEY = 'peak_stay_leads_sandbox';
 
 const mapFromDb = (l: any): Lead => ({
   id: l.id,
@@ -33,15 +34,21 @@ const mapToDb = (l: Partial<Lead>) => {
 
 export const subscribeToLeads = (callback: (leads: Lead[]) => void, userId?: string) => {
   if (!isSupabaseAvailable) {
-    const saved = localStorage.getItem('peak_stay_leads_sandbox');
+    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
     const localLeads = saved ? JSON.parse(saved) : [];
     const filtered = userId ? localLeads.filter((l: any) => l.userId === userId) : localLeads;
     callback(filtered);
-    return () => {};
+    
+    const handleStorage = () => {
+      const updated = localStorage.getItem(LOCAL_STORAGE_KEY);
+      const data = updated ? JSON.parse(updated) : [];
+      callback(userId ? data.filter((l: any) => l.userId === userId) : data);
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
   }
 
   const fetchLeads = async () => {
-    // Fixed: Removed .order('created_at')
     let query = supabase.from(TABLE).select('*');
     if (userId) {
       query = query.eq('user_id', userId);
@@ -57,7 +64,7 @@ export const subscribeToLeads = (callback: (leads: Lead[]) => void, userId?: str
 
 export const saveLead = async (lead: Omit<Lead, 'id' | 'timestamp' | 'status'>): Promise<string> => {
   if (!isSupabaseAvailable) {
-    const saved = localStorage.getItem('peak_stay_leads_sandbox');
+    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
     const localLeads = saved ? JSON.parse(saved) : [];
     const newLead = { 
       ...lead, 
@@ -65,23 +72,43 @@ export const saveLead = async (lead: Omit<Lead, 'id' | 'timestamp' | 'status'>):
       timestamp: new Date().toISOString(), 
       status: 'new' 
     };
-    localStorage.setItem('peak_stay_leads_sandbox', JSON.stringify([newLead, ...localLeads]));
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify([newLead, ...localLeads]));
+    window.dispatchEvent(new Event('storage'));
     return newLead.id;
   }
   const payload = mapToDb({ ...lead, status: 'new' });
   const { data, error } = await supabase.from(TABLE).insert([payload]).select();
   if (error) throw handleDbError(error, TABLE);
+  if (!data || data.length === 0) throw new Error("Insert failed: No data returned.");
   return data[0].id;
 };
 
 export const updateLeadStatus = async (id: string, status: Lead['status']): Promise<void> => {
-  if (!isSupabaseAvailable) return;
+  if (!isSupabaseAvailable) {
+    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (!saved) return;
+    const leads = JSON.parse(saved);
+    const index = leads.findIndex((l: any) => l.id === id);
+    if (index !== -1) {
+      leads[index].status = status;
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(leads));
+      window.dispatchEvent(new Event('storage'));
+    }
+    return;
+  }
   const { error } = await supabase.from(TABLE).update({ status }).eq('id', id);
   if (error) throw handleDbError(error, TABLE);
 };
 
 export const deleteLead = async (id: string): Promise<void> => {
-  if (!isSupabaseAvailable) return;
+  if (!isSupabaseAvailable) {
+    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (!saved) return;
+    const leads = JSON.parse(saved).filter((l: any) => l.id !== id);
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(leads));
+    window.dispatchEvent(new Event('storage'));
+    return;
+  }
   const { error } = await supabase.from(TABLE).delete().eq('id', id);
   if (error) throw handleDbError(error, TABLE);
 };
