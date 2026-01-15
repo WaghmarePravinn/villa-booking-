@@ -18,10 +18,10 @@ const generateUUID = () => {
 
 const isValidUUID = (id: any): boolean => {
   if (!id || typeof id !== 'string') return false;
-  // Robust standard UUID regex: 8-4-4-4-12 format with optional whitespace handling
-  const cleanedId = id.trim();
-  const regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  return regex.test(cleanedId);
+  // Aggressive cleanup: remove all whitespace including hidden characters
+  const cleanedId = id.replace(/\s/g, '');
+  // Simplified check: roughly 32-36 chars and contains at least one dash
+  return cleanedId.length >= 32 && cleanedId.length <= 38 && cleanedId.includes('-');
 };
 
 const fileToBase64 = (file: File): Promise<string> => {
@@ -53,9 +53,11 @@ const saveLocalVillas = (villas: Villa[]) => {
   window.dispatchEvent(new CustomEvent(UPDATE_EVENT, { detail: villas }));
 };
 
-const parsePostgresArray = (str: any): string[] => {
-  if (Array.isArray(str)) return str;
-  if (!str || typeof str !== 'string') return [];
+const parsePostgresArray = (input: any): string[] => {
+  if (Array.isArray(input)) return input.filter(Boolean);
+  if (!input || typeof input !== 'string') return [];
+  
+  const str = input.trim();
   
   // Handle Postgres string representation of arrays: {"item1","item2"}
   if (str.startsWith('{') && str.endsWith('}')) {
@@ -70,11 +72,16 @@ const parsePostgresArray = (str: any): string[] => {
     const parsed = JSON.parse(str);
     return Array.isArray(parsed) ? parsed : [str];
   } catch (e) {
+    // Handle comma-separated fallback
     return str.split(',').map(s => s.trim()).filter(Boolean);
   }
 };
 
 const mapFromDb = (v: any): Villa => {
+  // Logic to handle multiple potential column names for backward compatibility
+  const rawImageUrls = (v.image_urls && v.image_urls.length > 0) ? v.image_urls : v.image_url;
+  const rawVideoUrls = (v.video_urls && v.video_urls.length > 0) ? v.video_urls : v.video_url;
+
   return {
     id: v.id,
     name: v.name || "Unnamed Property",
@@ -85,10 +92,10 @@ const mapFromDb = (v: any): Villa => {
     capacity: Number(v.capacity ?? 0),
     description: v.description || "",
     longDescription: v.long_description || "",
-    imageUrls: parsePostgresArray(v.image_urls || v.image_url),
-    videoUrls: parsePostgresArray(v.video_urls || v.video_url),
-    amenities: Array.isArray(v.amenities) ? v.amenities : parsePostgresArray(v.amenities),
-    includedServices: Array.isArray(v.included_services) ? v.included_services : parsePostgresArray(v.included_services),
+    imageUrls: parsePostgresArray(rawImageUrls),
+    videoUrls: parsePostgresArray(rawVideoUrls),
+    amenities: parsePostgresArray(v.amenities),
+    includedServices: parsePostgresArray(v.included_services),
     isFeatured: Boolean(v.is_featured),
     rating: Number(v.rating ?? 5),
     ratingCount: Number(v.rating_count ?? 0),
@@ -111,11 +118,17 @@ const mapToDb = (v: Partial<Villa>) => {
   if (v.longDescription !== undefined) payload.long_description = v.longDescription;
   
   if (v.imageUrls !== undefined) {
-    payload.image_urls = v.imageUrls.filter(url => url && (url.startsWith('http') || url.startsWith('data:')));
+    // Clean and filter URLs. We support absolute URLs (http/https), protocol-relative (//), and data URIs.
+    const cleanUrls = v.imageUrls.filter(url => url && (url.includes('://') || url.startsWith('//') || url.startsWith('data:')));
+    payload.image_urls = cleanUrls;
+    // Fallback for singular column name
+    payload.image_url = cleanUrls.length > 0 ? cleanUrls[0] : null;
   }
   
   if (v.videoUrls !== undefined) {
-    payload.video_urls = v.videoUrls.filter(url => url && (url.startsWith('http') || url.startsWith('data:')));
+    const cleanUrls = v.videoUrls.filter(url => url && (url.includes('://') || url.startsWith('//') || url.startsWith('data:')));
+    payload.video_urls = cleanUrls;
+    payload.video_url = cleanUrls.length > 0 ? cleanUrls[0] : null;
   }
   
   if (v.amenities !== undefined) payload.amenities = v.amenities;
@@ -172,9 +185,12 @@ export const createVilla = async (villa: Omit<Villa, 'id'>): Promise<string> => 
 };
 
 export const updateVillaById = async (id: string, villa: Partial<Villa>): Promise<void> => {
+  const cleanedId = id?.replace(/\s/g, '');
+  if (!cleanedId) throw new Error("Missing ID for update operation.");
+
   if (!isSupabaseAvailable) {
     const villas = getLocalVillas();
-    const index = villas.findIndex(v => v.id === id);
+    const index = villas.findIndex(v => v.id === cleanedId);
     if (index !== -1) {
       villas[index] = { ...villas[index], ...villa };
       saveLocalVillas(villas);
@@ -182,20 +198,21 @@ export const updateVillaById = async (id: string, villa: Partial<Villa>): Promis
     return;
   }
   
-  if (!isValidUUID(id)) throw new Error(`Invalid UUID: ${id}`);
   const payload = mapToDb(villa);
-  const { error } = await supabase.from(TABLE).update(payload).eq('id', id);
+  const { error } = await supabase.from(TABLE).update(payload).eq('id', cleanedId);
   if (error) throw handleDbError(error, TABLE);
 };
 
 export const deleteVillaById = async (id: string): Promise<void> => {
+  const cleanedId = id?.replace(/\s/g, '');
+  if (!cleanedId) return;
+
   if (!isSupabaseAvailable) {
     const localVillas = getLocalVillas();
-    saveLocalVillas(localVillas.filter(v => v.id !== id));
+    saveLocalVillas(localVillas.filter(v => v.id !== cleanedId));
     return;
   }
-  const cleanedId = id?.trim();
-  if (!isValidUUID(cleanedId)) return;
+  
   const { error } = await supabase.from(TABLE).delete().eq('id', cleanedId);
   if (error) throw handleDbError(error, TABLE);
 };
@@ -211,10 +228,13 @@ export const uploadMedia = async (file: File, folder: 'images' | 'videos', onPro
   const filePath = `${folder}/${fileName}`;
   
   try {
+    // Note: Standard Supabase-js v2 doesn't have a built-in progress callback for upload()
+    // but we simulate reaching 100% when the promise resolves.
     const { error } = await supabase.storage.from('villa-media').upload(filePath, file, {
       cacheControl: '3600',
       upsert: false
     });
+    
     if (error) throw handleDbError(error, 'storage');
     
     if (onProgress) onProgress(100);

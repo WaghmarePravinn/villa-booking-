@@ -137,7 +137,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
   };
 
   const handleEdit = (villa: Villa) => {
-    setFormData({ ...villa });
+    // Deep copy arrays to avoid reference sharing
+    setFormData({ 
+      ...villa,
+      imageUrls: Array.isArray(villa.imageUrls) ? [...villa.imageUrls] : [],
+      videoUrls: Array.isArray(villa.videoUrls) ? [...villa.videoUrls] : [],
+      amenities: Array.isArray(villa.amenities) ? [...villa.amenities] : [],
+      includedServices: Array.isArray(villa.includedServices) ? [...villa.includedServices] : []
+    });
     setIsEditing(true);
   };
 
@@ -210,14 +217,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
           return { ...prev, [key]: arr };
         });
       } else {
+        const uploadedUrls: string[] = [];
         for (let i = 0; i < totalFiles; i++) {
+          setProgress(prev => ({ 
+            ...prev, 
+            percentage: (i / totalFiles) * 100, 
+            message: `Uploading ${type} ${i + 1}/${totalFiles}...` 
+          }));
           const url = await uploadMedia(files[i], type === 'image' ? 'images' : 'videos', (p) => {
-            setProgress(prev => ({ 
-              ...prev, 
-              percentage: p, 
-              message: `Syncing ${type} ${i + 1}/${totalFiles}...` 
-            }));
+             // Sub-progress per file (simulated 100 on upload completion)
           });
+          uploadedUrls.push(url);
+          
+          // Incremental update for UI feedback
           setFormData(prev => ({
             ...prev,
             [key]: [...(prev[key] || []), url]
@@ -376,8 +388,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                   
                   <div className="grid grid-cols-4 gap-3">
                     {formData.imageUrls?.map((url, i) => (
-                      <div key={i} className="relative aspect-square rounded-xl overflow-hidden group">
-                         <img src={url} className="w-full h-full object-cover" alt="" />
+                      <div key={i} className="relative aspect-square rounded-xl overflow-hidden group border border-slate-50 shadow-inner">
+                         <img src={url} className="w-full h-full object-cover" alt="" onError={(e) => (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80&w=200'} />
                          <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
                             <button type="button" onClick={() => handleMediaPicker('image', i)} className="text-white hover:text-sky-400"><i className="fa-solid fa-arrows-rotate text-xs"></i></button>
                             <button type="button" onClick={() => setFormData(prev => ({ ...prev, imageUrls: prev.imageUrls?.filter((_, idx) => idx !== i) }))} className="text-white hover:text-red-400"><i className="fa-solid fa-trash text-xs"></i></button>
@@ -389,9 +401,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                   {formData.videoUrls && formData.videoUrls.length > 0 && (
                     <div className="grid grid-cols-2 gap-3">
                        {formData.videoUrls.map((url, i) => (
-                         <div key={i} className="relative aspect-video rounded-xl overflow-hidden group">
+                         <div key={i} className="relative aspect-video rounded-xl overflow-hidden group border border-slate-50 bg-slate-900">
                             <video src={url} className="w-full h-full object-cover" />
-                            <button type="button" onClick={() => setFormData(prev => ({ ...prev, videoUrls: prev.videoUrls?.filter((_, idx) => idx !== i) }))} className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><i className="fa-solid fa-xmark text-[10px]"></i></button>
+                            <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-4 transition-all">
+                                <button type="button" onClick={() => handleMediaPicker('video', i)} className="w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center hover:bg-white/40"><i className="fa-solid fa-arrows-rotate text-xs"></i></button>
+                                <button type="button" onClick={() => setFormData(prev => ({ ...prev, videoUrls: prev.videoUrls?.filter((_, idx) => idx !== i) }))} className="w-8 h-8 rounded-full bg-red-500/80 text-white flex items-center justify-center hover:bg-red-500"><i className="fa-solid fa-trash-can text-xs"></i></button>
+                            </div>
                          </div>
                        ))}
                     </div>
@@ -418,7 +433,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                    <div key={v.id} className="bg-slate-50/50 p-6 rounded-[2.5rem] border border-slate-100 flex gap-6 group hover:bg-white hover:shadow-xl transition-all">
                       <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 shadow-inner">
                         <img 
-                          src={(v.imageUrls && v.imageUrls.length > 0) ? v.imageUrls[0] : 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80&w=400'} 
+                          src={(v.imageUrls && Array.isArray(v.imageUrls) && v.imageUrls.length > 0) ? v.imageUrls[0] : 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80&w=400'} 
                           className="w-full h-full object-cover" 
                           alt="" 
                           onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80&w=400'; }}
@@ -493,9 +508,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                <textarea value={promoText} onChange={e => setPromoText(e.target.value)} rows={3} placeholder="Campaign Text" className="w-full px-6 py-5 bg-slate-50 rounded-3xl border border-slate-100 text-sm font-bold resize-none" />
                <div className="space-y-3">
-                  <input value={whatsappNumber} onChange={e => setWhatsappNumber(e.target.value)} placeholder="WhatsApp" className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm font-bold" />
-                  <input value={contactEmail} onChange={e => setContactEmail(e.target.value)} placeholder="Email" className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm font-bold" />
-                  <input value={contactPhone} onChange={e => setContactPhone(e.target.value)} placeholder="Hotline" className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm font-bold" />
+                  <input value={whatsappNumber} onChange={setWhatsappNumber} placeholder="WhatsApp" className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm font-bold" />
+                  <input value={contactEmail} onChange={setContactEmail} placeholder="Email" className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm font-bold" />
+                  <input value={contactPhone} onChange={setContactPhone} placeholder="Hotline" className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm font-bold" />
                </div>
             </div>
 
