@@ -15,12 +15,24 @@ export enum AppTheme {
   DEFAULT = 'DEFAULT'
 }
 
+export interface OfferPopup {
+  enabled: boolean;
+  title: string;
+  description: string;
+  imageUrl?: string;
+  buttonText: string;
+  buttonLink: string;
+}
+
 export interface SiteSettings {
   activeTheme: AppTheme;
   promoText: string;
   whatsappNumber: string;
   contactEmail: string;
   contactPhone: string;
+  siteLogo?: string;
+  primaryColor?: string;
+  offerPopup: OfferPopup;
 }
 
 export interface User {

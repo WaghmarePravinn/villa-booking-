@@ -10,6 +10,7 @@ import UserDashboard from './pages/UserDashboard';
 import ServicesPage from './pages/ServicesPage';
 import TestimonialsPage from './pages/TestimonialsPage';
 import LoginPage from './pages/LoginPage';
+import OfferPopup from './components/OfferPopup';
 import { User, UserRole, Villa, VillaFilters, AppTheme, SiteSettings } from './types';
 import { subscribeToVillas, createVilla, updateVillaById, deleteVillaById } from './services/villaService';
 import { subscribeToSettings, DEFAULT_SETTINGS } from './services/settingsService';
@@ -25,6 +26,7 @@ const App: React.FC = () => {
   const [villas, setVillas] = useState<Villa[]>(isSupabaseAvailable ? [] : INITIAL_VILLAS);
   const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
+  const [showOffer, setShowOffer] = useState(false);
   
   const [currentPage, setCurrentPage] = useState<string>('home');
   const [selectedVillaId, setSelectedVillaId] = useState<string | null>(null);
@@ -40,6 +42,16 @@ const App: React.FC = () => {
     const unsubscribeSettings = subscribeToSettings((newSettings) => {
       setSettings(newSettings);
       document.body.className = `theme-${newSettings.activeTheme}`;
+      if (newSettings.primaryColor) {
+        document.documentElement.style.setProperty('--t-primary', newSettings.primaryColor);
+        document.documentElement.style.setProperty('--t-marquee-bg', newSettings.primaryColor);
+      }
+      
+      // Handle offer popup display logic (show once per session if enabled)
+      const hasSeenOffer = sessionStorage.getItem('peak_stay_offer_seen');
+      if (newSettings.offerPopup.enabled && !hasSeenOffer && currentPage === 'home') {
+        setTimeout(() => setShowOffer(true), 3000);
+      }
     });
 
     const timer = setTimeout(() => setLoading(false), 2000);
@@ -48,7 +60,7 @@ const App: React.FC = () => {
       unsubscribeSettings();
       clearTimeout(timer);
     };
-  }, []);
+  }, [currentPage]);
 
   const handleNavigate = (page: string) => {
     if (currentPage === page && page !== 'villa-detail') return;
@@ -81,6 +93,11 @@ const App: React.FC = () => {
   const handleExplore = (filters?: VillaFilters) => {
     setCurrentFilters(filters);
     handleNavigate('villas');
+  };
+
+  const closeOffer = () => {
+    setShowOffer(false);
+    sessionStorage.setItem('peak_stay_offer_seen', 'true');
   };
 
   const renderPage = () => {
@@ -148,6 +165,14 @@ const App: React.FC = () => {
       <div className={`transition-all duration-300 transform ${isTransitioning ? 'opacity-0 translate-y-4 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
         {renderPage()}
       </div>
+      
+      {showOffer && (
+        <OfferPopup 
+          offer={settings.offerPopup} 
+          onClose={closeOffer} 
+          onNavigate={handleNavigate} 
+        />
+      )}
     </Layout>
   );
 };
