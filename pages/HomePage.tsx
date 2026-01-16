@@ -82,7 +82,7 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
   };
 
   return (
-    <div className="space-y-12 sm:space-y-20 pb-20 sm:pb-32 relative bg-[#fcfdfe] overflow-visible" onMouseMove={handleMouseMove}>
+    <div className="space-y-6 sm:space-y-10 pb-20 sm:pb-32 relative bg-[#fcfdfe] overflow-visible" onMouseMove={handleMouseMove}>
       
       {/* Live Notification */}
       {liveBooking && (
@@ -99,8 +99,8 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
         </div>
       )}
 
-      {/* Hero Section - Tightened for instant filter visibility */}
-      <section className="relative min-h-[60vh] sm:min-h-[75vh] flex flex-col items-center justify-center px-4 overflow-visible pt-4 sm:pt-6">
+      {/* Hero Section - Tightened drastically to remove unnecessary empty space */}
+      <section className="relative min-h-[45vh] sm:min-h-[55vh] flex flex-col items-center justify-center px-4 overflow-visible pt-2 sm:pt-4">
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
           <div 
             className="w-full h-full transition-transform duration-1000 ease-out opacity-20 sm:opacity-10"
@@ -111,37 +111,37 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
           </div>
         </div>
 
-        <div className="relative z-10 text-center max-w-6xl mb-6 sm:mb-8 animate-fade">
-          <div className="mb-3 sm:mb-4 flex items-center justify-center gap-4 sm:gap-6">
+        <div className="relative z-10 text-center max-w-6xl mb-4 sm:mb-5 animate-fade">
+          <div className="mb-2 sm:mb-3 flex items-center justify-center gap-4 sm:gap-6">
              <div className="h-[1px] w-6 sm:w-12 bg-slate-200"></div>
              <span className="text-[7px] sm:text-[9px] font-black uppercase tracking-[0.4em] sm:tracking-[0.6em] text-slate-400 text-center">{settings.promoText}</span>
              <div className="h-[1px] w-6 sm:w-12 bg-slate-200"></div>
           </div>
           
-          <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-[8rem] font-bold font-serif mb-3 sm:mb-5 drop-shadow-2xl uppercase tracking-tighter text-theme-shimmer leading-[1.1] sm:leading-[0.85] flex flex-col items-center">
+          <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-[7.5rem] font-bold font-serif mb-2 sm:mb-3 drop-shadow-2xl uppercase tracking-tighter text-theme-shimmer leading-[0.8] sm:leading-[0.75] flex flex-col items-center">
             {BRAND_NAME.split(' ')[0]} 
-            <span className="text-sm sm:text-xl md:text-2xl lg:text-3xl tracking-[0.2em] sm:tracking-[0.3em] font-light italic text-slate-300 normal-case mt-1 sm:mt-2">PRIVATE SANCTUARIES</span>
+            <span className="text-[10px] sm:text-lg md:text-xl lg:text-2xl tracking-[0.2em] sm:tracking-[0.4em] font-light italic text-slate-300 normal-case mt-0.5 sm:mt-0.5">PRIVATE SANCTUARIES</span>
           </h1>
           
-          <p className="text-xs sm:text-base md:text-lg mb-4 sm:mb-6 text-slate-500 max-w-xl mx-auto font-medium leading-relaxed">
+          <p className="text-[10px] sm:text-sm md:text-base mb-2 sm:mb-4 text-slate-500 max-w-xl mx-auto font-medium leading-relaxed">
             Experience the pinnacle of Indian luxury. Hand-picked retreats curated for the discerning traveler.
           </p>
         </div>
 
-        {/* Search Hub - Elevated position for immediate use */}
+        {/* Search Hub - Positioned higher for immediate use */}
         <div className="relative z-[100] w-full max-w-6xl animate-reveal [animation-delay:200ms] overflow-visible">
-          <div className="bg-white rounded-full soft-shadow flex flex-col md:flex-row items-stretch md:items-center p-1.5 sm:p-2 border border-slate-50 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)]">
+          <div className="bg-white rounded-full soft-shadow flex flex-col md:flex-row items-stretch md:items-center p-1 sm:p-1.5 border border-slate-50 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)]">
             
             {/* DESTINATION SECTION */}
-            <div className="flex-1 px-6 sm:px-8 py-3 sm:py-5 relative group" ref={locationRef}>
-              <label className="block text-[8px] sm:text-[9px] font-black text-sky-600 uppercase tracking-widest mb-1 sm:mb-2 text-left">Destination</label>
+            <div className="flex-1 px-5 sm:px-8 py-2 sm:py-4 relative group" ref={locationRef}>
+              <label className="block text-[8px] sm:text-[9px] font-black text-sky-600 uppercase tracking-widest mb-0.5 sm:mb-1 text-left">Destination</label>
               <div className="flex items-center gap-3">
                  <i className="fa-solid fa-location-dot text-sky-200 text-sm"></i>
                  <input 
                   type="text" 
                   autoComplete="off"
                   placeholder="Where to?" 
-                  className="w-full bg-transparent outline-none text-sm sm:text-lg font-black text-slate-700 placeholder:text-sky-100"
+                  className="w-full bg-transparent outline-none text-sm sm:text-base font-black text-slate-700 placeholder:text-sky-100"
                   value={searchFilters.location} 
                   onFocus={() => setShowLocationSuggestions(true)}
                   onChange={(e) => {
@@ -185,34 +185,34 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
             </div>
 
             {/* VERTICAL DIVIDER */}
-            <div className="hidden md:block w-[1px] h-10 bg-sky-50"></div>
+            <div className="hidden md:block w-[1px] h-8 bg-sky-50"></div>
             
             {/* BOOKING WINDOWS SECTION */}
-            <div className="flex-1 px-6 sm:px-8 py-3 sm:py-5 cursor-pointer text-left group hover:bg-slate-50/30 transition-colors rounded-3xl"
+            <div className="flex-1 px-5 sm:px-8 py-2 sm:py-4 cursor-pointer text-left group hover:bg-slate-50/30 transition-colors rounded-3xl"
               onClick={() => setShowPicker(true)}>
-              <div className="flex items-center gap-2 mb-1 sm:mb-2">
+              <div className="flex items-center gap-2 mb-0.5 sm:mb-1">
                  <i className="fa-solid fa-calendar-days text-sky-600 text-[10px]"></i>
                  <label className="block text-[8px] sm:text-[9px] font-black text-sky-600 uppercase tracking-widest">Booking Windows</label>
               </div>
               <div className="flex items-center gap-4 sm:gap-6">
-                <span className={`text-sm sm:text-lg font-black ${searchFilters.checkIn ? 'text-slate-700' : 'text-sky-200'}`}>
+                <span className={`text-sm sm:text-base font-black ${searchFilters.checkIn ? 'text-slate-700' : 'text-sky-200'}`}>
                   {searchFilters.checkIn ? searchFilters.checkIn.split('-').reverse().slice(0, 2).join('/') : 'Arrival'}
                 </span>
-                <div className="w-8 sm:w-12 h-[1px] bg-sky-100"></div>
-                <span className={`text-sm sm:text-lg font-black ${searchFilters.checkOut ? 'text-slate-700' : 'text-sky-200'}`}>
+                <div className="w-6 sm:w-10 h-[1px] bg-sky-100"></div>
+                <span className={`text-sm sm:text-base font-black ${searchFilters.checkOut ? 'text-slate-700' : 'text-sky-200'}`}>
                   {searchFilters.checkOut ? searchFilters.checkOut.split('-').reverse().slice(0, 2).join('/') : 'Departure'}
                 </span>
               </div>
             </div>
 
             {/* VERTICAL DIVIDER */}
-            <div className="hidden md:block w-[1px] h-10 bg-sky-50"></div>
+            <div className="hidden md:block w-[1px] h-8 bg-sky-50"></div>
 
             {/* EXPLORE BUTTON SECTION */}
-            <div className="p-1 sm:p-2 w-full md:w-auto">
+            <div className="p-1 w-full md:w-auto">
               <button 
                 onClick={handleSearch} 
-                className="w-full md:w-auto px-8 sm:px-12 py-4 sm:py-5 rounded-full font-black text-[10px] sm:text-[11px] uppercase tracking-[0.2em] flex items-center justify-center gap-4 shadow-xl transition-all active:scale-95 border-none"
+                className="w-full md:w-auto px-6 sm:px-10 py-3 sm:py-4 rounded-full font-black text-[10px] sm:text-[11px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 shadow-xl transition-all active:scale-95 border-none"
                 style={{ background: '#FF9B42', color: 'white' }}
               >
                 EXPLORE SANCTUM <i className="fa-solid fa-arrow-right-long text-xs"></i>
@@ -223,19 +223,19 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
       </section>
 
       {/* Stats Hub */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-2">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           {[
             { l: "Elite Sanctums", v: "500+", i: "fa-hotel" },
             { l: "Heritage Cities", v: "24+", i: "fa-map-location-dot" },
             { l: "Legacies Crafted", v: "12k+", i: "fa-users-viewfinder" },
             { l: "Concierge Score", v: "100%", i: "fa-crown" }
           ].map((stat, i) => (
-            <div key={i} className="group bg-white p-6 sm:p-10 rounded-2xl sm:rounded-[3rem] border border-slate-50 hover:bg-slate-900 transition-all duration-700 text-center soft-shadow">
-              <div className="w-10 h-10 sm:w-14 sm:h-14 mx-auto mb-4 sm:mb-6 rounded-xl bg-slate-50 group-hover:bg-white/10 flex items-center justify-center text-lg text-sky-600 group-hover:text-white transition-all">
+            <div key={i} className="group bg-white p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-slate-50 hover:bg-slate-900 transition-all duration-700 text-center soft-shadow">
+              <div className="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 rounded-xl bg-slate-50 group-hover:bg-white/10 flex items-center justify-center text-base text-sky-600 group-hover:text-white transition-all">
                  <i className={`fa-solid ${stat.i}`}></i>
               </div>
-              <p className="text-xl sm:text-4xl font-bold font-serif text-slate-900 group-hover:text-white mb-1">{stat.v}</p>
+              <p className="text-lg sm:text-3xl font-bold font-serif text-slate-900 group-hover:text-white mb-0.5">{stat.v}</p>
               <p className="text-[7px] sm:text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 group-hover:text-slate-500">{stat.l}</p>
             </div>
           ))}
@@ -243,41 +243,40 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
       </section>
 
       {/* Featured Grid */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="mb-8 sm:mb-16 flex flex-col md:flex-row justify-between items-start md:items-end gap-4 sm:gap-10">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-4">
+        <div className="mb-6 sm:mb-12 flex flex-col md:flex-row justify-between items-start md:items-end gap-4 sm:gap-8">
           <div className="max-w-2xl text-left">
-            <span className="text-sky-600 font-black uppercase tracking-[0.4em] text-[9px] sm:text-[11px] mb-2 block">The Collection</span>
-            <h2 className="text-3xl sm:text-6xl md:text-7xl font-bold font-serif text-slate-900 leading-[1.1] sm:leading-[0.9]">Signature Stays</h2>
+            <span className="text-sky-600 font-black uppercase tracking-[0.4em] text-[9px] sm:text-[11px] mb-1 block">The Collection</span>
+            <h2 className="text-2xl sm:text-5xl md:text-6xl font-bold font-serif text-slate-900 leading-[1.1]">Signature Stays</h2>
           </div>
-          <button onClick={() => onExplore()} className="group flex items-center gap-3 text-[9px] sm:text-[11px] font-black uppercase tracking-widest text-slate-900 border border-slate-200 px-6 py-3 sm:py-6 rounded-xl sm:rounded-[2rem] bg-white soft-shadow hover:bg-slate-900 hover:text-white transition-all w-full sm:w-auto justify-center">
+          <button onClick={() => onExplore()} className="group flex items-center gap-3 text-[9px] sm:text-[11px] font-black uppercase tracking-widest text-slate-900 border border-slate-200 px-6 py-3 rounded-xl sm:rounded-2xl bg-white soft-shadow hover:bg-slate-900 hover:text-white transition-all w-full sm:w-auto justify-center">
             VIEW ALL <i className="fa-solid fa-chevron-right group-hover:translate-x-2 transition-transform"></i>
           </button>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-10">
           {featuredVillas.map(v => (
-            // Fixed typo: changed handleViewDetails to onViewDetails
             <VillaCard key={v.id} villa={v} whatsappNumber={settings.whatsappNumber} onViewDetails={onViewDetails} />
           ))}
         </div>
       </section>
 
       {/* Testimonials */}
-      <section className="py-20 sm:py-32 bg-slate-900 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 mb-10 sm:mb-20 relative z-10 text-center sm:text-left">
-           <span className="text-sky-500 font-black uppercase tracking-[0.6em] text-[9px] sm:text-[11px] mb-4 block">Guest Chronicles</span>
-           <h2 className="text-3xl sm:text-6xl font-bold font-serif text-white leading-tight">Voices of the Sanctuary</h2>
+      <section className="py-16 sm:py-24 bg-slate-900 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 mb-8 sm:mb-16 relative z-10 text-center sm:text-left">
+           <span className="text-sky-500 font-black uppercase tracking-[0.6em] text-[9px] sm:text-[11px] mb-2 block">Guest Chronicles</span>
+           <h2 className="text-2xl sm:text-5xl font-bold font-serif text-white leading-tight">Voices of the Sanctuary</h2>
         </div>
-        <div className="flex animate-[marquee_60s_linear_infinite] whitespace-nowrap gap-6 sm:gap-12 py-4 hover:[animation-play-state:paused]">
+        <div className="flex animate-[marquee_60s_linear_infinite] whitespace-nowrap gap-6 sm:gap-12 py-2 hover:[animation-play-state:paused]">
            {(testimonials.length > 0 ? [...testimonials, ...testimonials] : []).map((t, i) => (
-             <div key={i} className="inline-block w-[260px] sm:w-[420px] bg-white/5 backdrop-blur-3xl border border-white/10 p-6 sm:p-12 rounded-[2rem] sm:rounded-[3rem] group hover:bg-white transition-all duration-700 whitespace-normal text-left">
-                <p className="text-slate-300 group-hover:text-slate-700 leading-relaxed font-medium mb-6 sm:mb-12 text-sm sm:text-xl italic">"{t.content}"</p>
-                <div className="flex items-center gap-4 border-t border-white/10 group-hover:border-slate-100 pt-6">
-                  <div className="w-10 h-10 sm:w-16 sm:h-16 rounded-xl overflow-hidden shrink-0">
+             <div key={i} className="inline-block w-[240px] sm:w-[380px] bg-white/5 backdrop-blur-3xl border border-white/10 p-5 sm:p-10 rounded-[2rem] sm:rounded-[2.5rem] group hover:bg-white transition-all duration-700 whitespace-normal text-left">
+                <p className="text-slate-300 group-hover:text-slate-700 leading-relaxed font-medium mb-4 sm:mb-8 text-xs sm:text-lg italic">"{t.content}"</p>
+                <div className="flex items-center gap-3 border-t border-white/10 group-hover:border-slate-100 pt-5">
+                  <div className="w-8 h-8 sm:w-14 sm:h-14 rounded-xl overflow-hidden shrink-0">
                     <img src={t.avatar} alt={t.name} className="w-full h-full object-cover" />
                   </div>
                   <div className="min-w-0">
-                    <h4 className="font-black text-white group-hover:text-slate-900 text-sm sm:text-base truncate">{t.name}</h4>
-                    <p className="text-[8px] sm:text-[10px] text-sky-400 font-black uppercase tracking-widest mt-1 truncate">{t.category}</p>
+                    <h4 className="font-black text-white group-hover:text-slate-900 text-xs sm:text-sm truncate">{t.name}</h4>
+                    <p className="text-[7px] sm:text-[9px] text-sky-400 font-black uppercase tracking-widest mt-0.5 truncate">{t.category}</p>
                   </div>
                 </div>
              </div>
