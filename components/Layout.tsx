@@ -15,88 +15,88 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children, user, settings, onLogout, onNavigate, currentPage }) => {
   const navLinks = [
     { label: 'Home', id: 'home', icon: 'fa-house' },
-    { label: 'Villas', id: 'villas', icon: 'fa-hotel' },
+    { label: 'Stay', id: 'villas', icon: 'fa-map-location-dot' },
     { label: 'Services', id: 'services', icon: 'fa-concierge-bell' },
-    { label: 'Testimonials', id: 'testimonials', icon: 'fa-comment-dots' },
-    { label: 'About', id: 'about', icon: 'fa-circle-info' }
+    { label: 'Contact', id: 'contact', icon: 'fa-envelope' }
   ];
 
+  const handleLinkClick = (id: string) => {
+    if (id === 'contact') {
+      const footer = document.querySelector('footer');
+      footer?.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      onNavigate(id);
+    }
+  };
+
   return (
-    <div className="min-h-screen flex flex-col selection:bg-sky-100 selection:text-sky-900">
-      {/* Dynamic Marquee */}
+    <div className="min-h-screen flex flex-col selection:bg-sky-100 selection:text-sky-900 bg-[#fcfdfe]">
+      {/* Top Banner - Higher contrast for mobile legibility */}
       <div 
-        className="fixed top-0 left-0 right-0 z-[120] overflow-hidden py-1.5 sm:py-2 shadow-sm"
+        className="fixed top-0 left-0 right-0 z-[150] overflow-hidden py-1 sm:py-1.5 shadow-sm"
         style={{ backgroundColor: 'var(--t-marquee-bg)', color: 'var(--t-marquee-text)' }}
       >
-        <div className="flex animate-[marquee_30s_linear_infinite] whitespace-nowrap">
-          {[...Array(10)].map((_, i) => (
-            <span key={i} className="text-[7px] sm:text-[9px] font-black uppercase tracking-[0.2em] sm:tracking-[0.4em] mx-4 sm:mx-12 flex items-center gap-2 sm:gap-6">
+        <div className="flex animate-[marquee_40s_linear_infinite] whitespace-nowrap">
+          {[...Array(8)].map((_, i) => (
+            <span key={i} className="text-[7px] sm:text-[9px] font-black uppercase tracking-[0.4em] mx-8 sm:mx-16 flex items-center gap-4">
               <span className="flex items-center gap-1.5">
                 <div className="w-1 h-1 bg-white rounded-full opacity-40"></div>
                 <div className="w-1 h-1 bg-white rounded-full"></div>
               </span>
               {settings.promoText}
-              <i className="fa-solid fa-sparkles text-white/50"></i>
             </span>
           ))}
         </div>
       </div>
 
-      <nav className="fixed top-6 sm:top-8 left-0 right-0 z-[110] transition-all duration-700 glass-panel shadow-sm border-b border-white/40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-14 sm:h-20 items-center">
+      {/* Top Navigation - Simplified for mobile */}
+      <nav className="fixed top-6 sm:top-8 left-0 right-0 z-[140] transition-all duration-700 glass-panel shadow-sm border-b border-white/20 h-14 sm:h-18">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 h-full">
+          <div className="flex justify-between items-center h-full">
             {/* Branding */}
             <div 
-              className="flex items-center cursor-pointer group space-x-2 sm:space-x-4 shrink-0" 
+              className="flex items-center cursor-pointer group space-x-2 sm:space-x-3 shrink-0" 
               onClick={() => onNavigate('home')}
             >
               <div 
-                className="w-8 h-8 sm:w-11 sm:h-11 rounded-lg sm:rounded-2xl flex items-center justify-center transition-all duration-500 shadow-xl group-hover:rotate-12"
-                style={{ backgroundColor: 'var(--t-primary)' }}
+                className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center transition-all duration-500 shadow-xl group-hover:rotate-6 bg-sky-600"
               >
-                <i className="fa-solid fa-hotel text-white text-xs sm:text-lg"></i>
+                <i className="fa-solid fa-mountain text-white text-xs sm:text-base"></i>
               </div>
               <div className="flex flex-col">
-                <span className="text-sm sm:text-xl font-black font-serif tracking-tight uppercase leading-none" style={{ color: 'var(--t-primary)' }}>
-                  {BRAND_NAME.split(' ')[0]}
+                <span className="text-[10px] sm:text-lg font-black font-serif tracking-tight uppercase leading-none text-sky-600">
+                  {BRAND_NAME.split(' ')[0]} {BRAND_NAME.split(' ')[1]}
                 </span>
-                <span className="text-[6px] sm:text-[8px] font-sans tracking-[0.2em] font-extrabold uppercase opacity-60 mt-0.5" style={{ color: 'var(--t-accent)' }}>
-                  EST. 2015
+                <span className="text-[6px] sm:text-[7px] font-sans tracking-[0.25em] font-extrabold uppercase opacity-60 mt-0.5 text-amber-500">
+                  DESTINATION
                 </span>
               </div>
             </div>
             
             {/* Desktop Navigation */}
-            <div className="hidden lg:flex space-x-8 xl:space-x-12 items-center">
+            <div className="hidden lg:flex space-x-10 items-center">
               {navLinks.map((link) => (
                 <button 
                   key={link.id}
-                  onClick={() => onNavigate(link.id)} 
-                  className={`relative text-[10px] font-black uppercase tracking-[0.25em] transition-all py-2 group ${currentPage === link.id ? 'opacity-100' : 'opacity-40 hover:opacity-100'}`}
-                  style={{ color: currentPage === link.id ? 'var(--t-primary)' : 'inherit' }}
+                  onClick={() => handleLinkClick(link.id)} 
+                  className={`relative text-[10px] font-black uppercase tracking-[0.25em] transition-all py-2 group ${currentPage === link.id ? 'opacity-100 text-sky-600' : 'opacity-40 hover:opacity-100'}`}
                 >
                   {link.label}
                   <span 
-                    className={`absolute bottom-0 left-0 h-0.5 transition-all duration-500 rounded-full ${currentPage === link.id ? 'w-full' : 'w-0 group-hover:w-full'}`}
-                    style={{ backgroundColor: 'var(--t-primary)' }}
+                    className={`absolute bottom-0 left-0 h-0.5 transition-all duration-500 rounded-full bg-sky-600 ${currentPage === link.id ? 'w-full' : 'w-0 group-hover:w-full'}`}
                   ></span>
                 </button>
               ))}
             </div>
 
-            {/* User Menu */}
-            <div className="flex items-center gap-2">
+            {/* User Menu & CTA */}
+            <div className="flex items-center gap-2 sm:gap-4">
               {user ? (
-                <div className="flex items-center gap-2 bg-white/60 p-1 rounded-xl border border-white/40 shadow-sm">
-                  <div 
-                    className="flex flex-col items-end px-2 sm:px-4 cursor-pointer"
-                    onClick={() => onNavigate(user.role === UserRole.ADMIN ? 'admin' : 'user-dashboard')}
-                  >
-                    <span className="text-[9px] sm:text-xs font-black text-slate-800 truncate max-w-[60px] sm:max-w-none">{user.username}</span>
-                  </div>
+                <div className="flex items-center gap-1.5 bg-slate-50 p-1 rounded-xl border border-slate-100 shadow-sm">
+                  <span className="hidden md:block text-[10px] font-black text-slate-800 px-3">{user.username}</span>
                   <button 
                     onClick={onLogout}
-                    className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg bg-white flex items-center justify-center text-slate-400 hover:text-red-500 shadow-sm transition-all"
+                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white flex items-center justify-center text-slate-400 hover:text-red-500 shadow-sm transition-all"
                   >
                     <i className="fa-solid fa-power-off text-xs"></i>
                   </button>
@@ -104,93 +104,104 @@ const Layout: React.FC<LayoutProps> = ({ children, user, settings, onLogout, onN
               ) : (
                 <button 
                   onClick={() => onNavigate('login')}
-                  className="px-4 sm:px-8 py-2 sm:py-3 rounded-lg sm:rounded-xl text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-white premium-btn border-none"
+                  className="px-3 sm:px-6 py-2 rounded-lg text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-all"
                 >
-                  Sign In
+                  Log In
                 </button>
               )}
+              
+              <button 
+                onClick={() => onNavigate('villas')}
+                className="px-4 sm:px-10 py-2 sm:py-3.5 rounded-lg sm:rounded-xl text-[8px] sm:text-[11px] font-black uppercase tracking-widest text-white bg-sky-600 hover:bg-sky-700 transition-all shadow-lg shadow-sky-500/20"
+              >
+                Book
+              </button>
             </div>
           </div>
         </div>
+      </nav>
 
-        {/* Persistent Mobile Sub-Navigation - Clear & Visible */}
-        <div className="lg:hidden flex justify-between px-2 py-2 bg-white/40 border-t border-white/20 backdrop-blur-md overflow-x-auto no-scrollbar">
+      {/* Mobile Navigation - Fixed Bottom for better reach and cleaner header */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-[150] px-4 py-3 bg-white/80 backdrop-blur-2xl border-t border-slate-100 shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
+        <div className="flex justify-around items-center">
           {navLinks.map((link) => (
             <button 
               key={link.id}
-              onClick={() => onNavigate(link.id)} 
-              className={`flex flex-col items-center justify-center min-w-[64px] py-1 transition-all rounded-xl ${currentPage === link.id ? 'bg-white shadow-sm ring-1 ring-slate-100' : 'opacity-60'}`}
+              onClick={() => handleLinkClick(link.id)} 
+              className={`flex flex-col items-center justify-center w-16 transition-all ${currentPage === link.id ? 'scale-110' : 'opacity-40'}`}
             >
-              <i className={`fa-solid ${link.icon} text-[14px] mb-1`} style={{ color: currentPage === link.id ? 'var(--t-primary)' : 'inherit' }}></i>
-              <span className={`text-[8px] font-black uppercase tracking-tighter ${currentPage === link.id ? 'text-slate-900' : 'text-slate-500'}`}>
+              <i className={`fa-solid ${link.icon} text-lg mb-1 ${currentPage === link.id ? 'text-sky-600' : 'text-slate-900'}`}></i>
+              <span className={`text-[8px] font-black uppercase tracking-widest ${currentPage === link.id ? 'text-sky-600' : 'text-slate-500'}`}>
                 {link.label}
               </span>
             </button>
           ))}
         </div>
-      </nav>
+      </div>
 
-      <main className="flex-grow pt-24 sm:pt-36">
+      <main className="flex-grow pt-20 sm:pt-28 pb-20 lg:pb-0">
         {children}
       </main>
 
-      <footer className="py-12 sm:py-24 bg-white/50 border-t border-slate-100 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <footer className="py-12 sm:py-24 bg-slate-900 border-t border-slate-800 mt-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 sm:gap-20">
             <div className="col-span-1 md:col-span-2">
-              <div className="flex items-center mb-6">
-                <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center mr-3 sm:mr-5 shadow-2xl" style={{ backgroundColor: 'var(--t-primary)' }}>
-                   <i className="fa-solid fa-hotel text-white text-lg sm:text-xl"></i>
+              <div className="flex items-center mb-8">
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center mr-4 bg-sky-600 shadow-2xl">
+                   <i className="fa-solid fa-mountain text-white text-lg"></i>
                 </div>
-                <span className="text-2xl sm:text-4xl font-bold font-serif tracking-tight uppercase leading-none text-slate-900">
+                <span className="text-xl sm:text-3xl font-bold font-serif tracking-tight uppercase text-white">
                   {BRAND_NAME}
                 </span>
               </div>
-              <p className="max-w-md mb-8 leading-relaxed font-medium text-base text-slate-500 italic">
-                Crafting timeless memories through a curated selection of India's most breathtaking private retreats.
+              <p className="max-w-md mb-10 text-sm sm:text-lg text-slate-400 italic font-medium leading-relaxed opacity-70">
+                Experience the height of luxury and comfort with our curated selection of breathtaking private retreats.
               </p>
-              <div className="flex space-x-4">
-                {['instagram', 'facebook-f', 'linkedin-in'].map(social => (
-                  <a key={social} href="#" className="w-10 h-10 rounded-xl bg-white flex items-center justify-center hover:bg-slate-900 hover:text-white transition-all border border-slate-100 shadow-sm">
-                    <i className={`fa-brands fa-${social} text-sm`}></i>
+              <div className="flex space-x-6">
+                {['instagram', 'facebook-f', 'linkedin-in', 'twitter'].map(social => (
+                  <a key={social} href="#" className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white hover:text-slate-900 transition-all shadow-sm">
+                    <i className={`fa-brands fa-${social} text-lg text-white group-hover:text-slate-900`}></i>
                   </a>
                 ))}
               </div>
             </div>
             
-            <div className="grid grid-cols-2 gap-8 col-span-1 md:col-span-2">
+            <div className="grid grid-cols-2 gap-10 col-span-1 md:col-span-2">
               <div>
-                <h4 className="font-black mb-6 uppercase text-[10px] tracking-[0.4em] text-slate-400">Navigation</h4>
-                <ul className="space-y-4 text-[12px] font-bold text-slate-600">
+                <h4 className="font-black mb-8 uppercase text-[10px] tracking-[0.5em] text-slate-500">Navigation</h4>
+                <ul className="space-y-6 text-[12px] font-black uppercase tracking-widest text-slate-300">
                   {navLinks.map(link => (
-                    <li key={link.id}><button onClick={() => onNavigate(link.id)} className="hover:text-sky-600 transition-colors">{link.label}</button></li>
+                    <li key={link.id}><button onClick={() => handleLinkClick(link.id)} className="hover:text-sky-400 transition-colors">{link.label}</button></li>
                   ))}
+                  <li><button onClick={() => onNavigate('about')} className="hover:text-sky-400 transition-colors">About Us</button></li>
+                  <li><button className="hover:text-sky-400 transition-colors">Privacy</button></li>
+                  <li><button className="hover:text-sky-400 transition-colors">Terms</button></li>
                 </ul>
               </div>
               <div>
-                <h4 className="font-black mb-6 uppercase text-[10px] tracking-[0.4em] text-slate-400">Contact</h4>
-                <div className="flex flex-col gap-4">
+                <h4 className="font-black mb-8 uppercase text-[10px] tracking-[0.5em] text-slate-500">Contact</h4>
+                <div className="flex flex-col gap-6">
                   <div className="min-w-0">
-                    <p className="text-[8px] font-black uppercase opacity-40 tracking-widest mb-1">Global Support</p>
-                    <a href={`mailto:${settings.contactEmail}`} className="text-xs font-bold text-slate-800 hover:text-sky-600 transition-colors truncate block">{settings.contactEmail}</a>
+                    <p className="text-[8px] font-black uppercase opacity-40 tracking-widest mb-1.5 text-white">Concierge</p>
+                    <a href={`mailto:${settings.contactEmail}`} className="text-[12px] font-black text-slate-100 hover:text-sky-400 transition-colors truncate block">{settings.contactEmail}</a>
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[8px] font-black uppercase opacity-40 tracking-widest mb-1">WhatsApp</p>
-                    <a href={`https://wa.me/${settings.whatsappNumber}`} target="_blank" className="text-xs font-bold text-slate-800 hover:text-emerald-600 transition-colors truncate block">{settings.whatsappNumber}</a>
+                    <p className="text-[8px] font-black uppercase opacity-40 tracking-widest mb-1.5 text-white">Direct</p>
+                    <a href={`https://wa.me/${settings.whatsappNumber}`} target="_blank" className="text-[12px] font-black text-slate-100 hover:text-emerald-400 transition-colors truncate block">{settings.whatsappNumber}</a>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="border-t mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-6 border-slate-100">
-            <p className="text-[8px] sm:text-[10px] uppercase tracking-[0.3em] font-black opacity-30 text-center">
-              &copy; {new Date().getFullYear()} {BRAND_NAME} • ALL RIGHTS RESERVED
+          <div className="border-t mt-16 pt-10 flex flex-col md:flex-row justify-between items-center gap-8 border-slate-800">
+            <p className="text-[9px] sm:text-[11px] uppercase tracking-[0.5em] font-black opacity-30 text-slate-400 text-center">
+              &copy; {new Date().getFullYear()} {BRAND_NAME}
             </p>
             <div className="flex gap-4">
-               <div className="w-8 h-1 rounded-full opacity-20" style={{ backgroundColor: 'var(--t-primary)' }}></div>
-               <div className="w-8 h-1 rounded-full opacity-20" style={{ backgroundColor: 'var(--t-accent)' }}></div>
-               <div className="w-8 h-1 rounded-full opacity-20" style={{ backgroundColor: 'var(--t-secondary)' }}></div>
+               <div className="w-8 h-1 rounded-full bg-sky-600 opacity-20"></div>
+               <div className="w-8 h-1 rounded-full bg-amber-500 opacity-20"></div>
             </div>
           </div>
         </div>

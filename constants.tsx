@@ -65,6 +65,31 @@ export const INITIAL_VILLAS: Villa[] = [
     mealsAvailable: true,
     petFriendly: true,
     refundPolicy: "Full refund if cancelled 48 hours before check-in."
+  },
+  {
+    id: '00000000-0000-0000-0000-000000000003',
+    name: "Mountain View Heritage Villa",
+    location: "Karjat, Maharashtra",
+    pricePerNight: 12500,
+    bedrooms: 4,
+    bathrooms: 4,
+    capacity: 10,
+    description: "Experience the height of luxury & comfort in this mountain-facing sanctuary.",
+    longDescription: "A heritage property redefined for the modern age, offering panoramic views of the Sahyadri range.",
+    imageUrls: [
+      "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&q=80&w=1200"
+    ],
+    videoUrls: [],
+    amenities: ["Mountain View", "Private Pool", "Heritage Architecture", "Wi-Fi"],
+    includedServices: ["Daily Cleaning"],
+    isFeatured: true,
+    rating: 4.8,
+    ratingCount: 42,
+    numRooms: 4,
+    mealsAvailable: true,
+    petFriendly: false,
+    refundPolicy: "Non-refundable."
   }
 ];
 
@@ -95,24 +120,6 @@ export const TESTIMONIALS: Testimonial[] = [
     avatar: "https://i.pravatar.cc/150?u=elena",
     category: 'Trip',
     timestamp: new Date(Date.now() - 172800000).toISOString()
-  },
-  {
-    id: '4',
-    name: "Vikram Malhotra",
-    content: "Exceptional staff service! They managed our large group of 15 with such grace and efficiency.",
-    rating: 5,
-    avatar: "https://i.pravatar.cc/150?u=vikram",
-    category: 'Service',
-    timestamp: new Date(Date.now() - 3600000).toISOString()
-  },
-  {
-    id: '5',
-    name: "Pooja Hegde",
-    content: "The hospitality here is unmatched. From the welcome drinks to the personalized checkout, everything was perfect.",
-    rating: 5,
-    avatar: "https://i.pravatar.cc/150?u=pooja",
-    category: 'Hospitality',
-    timestamp: new Date(Date.now() - 7200000).toISOString()
   }
 ];
 

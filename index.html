@@ -34,24 +34,6 @@
             --t-marquee-bg: #FF9933;
         }
 
-        .theme-HOLI {
-            --t-primary: #ec4899;
-            --t-accent: #eab308;
-            --t-secondary: #06b6d4;
-            --t-bg: #fdf2f8;
-            --t-text: #831843;
-            --t-marquee-bg: #db2777;
-        }
-
-        .theme-DIWALI {
-            --t-primary: #7c2d12;
-            --t-accent: #f59e0b;
-            --t-secondary: #92400e;
-            --t-bg: #fff7ed;
-            --t-text: #431407;
-            --t-marquee-bg: #7c2d12;
-        }
-
         html {
             scroll-behavior: smooth;
         }
@@ -78,11 +60,11 @@
         }
 
         .text-theme-shimmer {
-            background: linear-gradient(to right, var(--t-primary), var(--t-accent), var(--t-secondary), var(--t-primary));
+            background: linear-gradient(to right, #0c4a6e, #0284c7, #38bdf8, #0c4a6e);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-size: 200% auto;
-            animation: shimmer 5s linear infinite;
+            animation: shimmer 8s linear infinite;
         }
 
         @keyframes shimmer { to { background-position: 200% center; } }
@@ -121,29 +103,27 @@
             from { opacity: 0; transform: translateY(30px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .animate-reveal { animation: reveal 1s var(--ease-out-expo) forwards; }
+        .animate-reveal { animation: reveal 0.8s var(--ease-out-expo) forwards; }
 
         @keyframes fade-in {
             from { opacity: 0; }
             to { opacity: 1; }
         }
-        .animate-fade { animation: fade-in 0.8s var(--ease-out-expo) forwards; }
+        .animate-fade { animation: fade-in 0.6s var(--ease-out-expo) forwards; }
 
         @keyframes popup {
-            from { opacity: 0; transform: scale(0.9) translateY(20px); }
+            from { opacity: 0; transform: scale(0.95) translateY(10px); }
             to { opacity: 1; transform: scale(1) translateY(0); }
         }
-        .animate-popup { animation: popup 0.5s var(--ease-out-expo) forwards; }
-
-        /* Ensure mobile buttons have adequate touch area */
-        button, a {
-            min-height: 44px;
-            min-width: 44px;
-        }
+        .animate-popup { animation: popup 0.4s var(--ease-out-expo) forwards; }
 
         * {
-            transition: border-color 0.3s ease, background-color 0.3s ease, transform 0.3s var(--ease-out-expo);
             -webkit-tap-highlight-color: transparent;
+        }
+
+        .mask-linear {
+            -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+            mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
         }
     </style>
 <script type="importmap">
