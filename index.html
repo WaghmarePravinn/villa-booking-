@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-    <title>Peak Stay | Luxury Villa Collection</title>
+    <title>Peak Stay Destination | Luxury Villa Collection</title>
     <meta name="theme-color" content="#0ea5e9">
     <link rel="manifest" href="/manifest.json">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -16,22 +16,13 @@
             --t-primary: #0284c7;
             --t-accent: #f59e0b;
             --t-secondary: #0ea5e9;
-            --t-bg: #f8fafc;
+            --t-bg: #fcfdfe;
             --t-card-bg: #ffffff;
             --t-text: #0c4a6e;
             --t-marquee-bg: #0284c7;
             --t-marquee-text: #ffffff;
-            --glass-bg: rgba(255, 255, 255, 0.85);
-            --glass-border: rgba(255, 255, 255, 0.5);
-        }
-
-        .theme-REPUBLIC_DAY, .theme-INDEPENDENCE_DAY {
-            --t-primary: #FF9933;
-            --t-accent: #128807;
-            --t-secondary: #000080;
-            --t-bg: #fffbf7;
-            --t-text: #1e3a8a;
-            --t-marquee-bg: #FF9933;
+            --glass-bg: rgba(255, 255, 255, 0.8);
+            --glass-border: rgba(255, 255, 255, 0.4);
         }
 
         html {
@@ -43,7 +34,6 @@
             -webkit-font-smoothing: antialiased;
             background-color: var(--t-bg);
             color: var(--t-text);
-            transition: background-color 0.8s var(--ease-out-expo), color 0.8s var(--ease-out-expo);
             overflow-x: hidden;
             width: 100%;
         }
@@ -54,77 +44,57 @@
 
         .glass-panel {
             background: var(--glass-bg);
-            backdrop-filter: blur(24px) saturate(180%);
-            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            backdrop-filter: blur(20px) saturate(160%);
+            -webkit-backdrop-filter: blur(20px) saturate(160%);
             border: 1px solid var(--glass-border);
         }
 
-        .text-theme-shimmer {
-            background: linear-gradient(to right, #0c4a6e, #0284c7, #38bdf8, #0c4a6e);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-size: 200% auto;
-            animation: shimmer 8s linear infinite;
+        .premium-shadow {
+            box-shadow: 0 20px 50px -12px rgba(2, 132, 199, 0.12);
         }
 
-        @keyframes shimmer { to { background-position: 200% center; } }
-
-        .soft-shadow {
-            box-shadow: 0 10px 40px -10px rgba(2, 132, 199, 0.08), 
-                        0 20px 25px -5px rgba(2, 132, 199, 0.03);
+        .hover-lift {
+            transition: transform 0.4s var(--ease-out-expo), box-shadow 0.4s var(--ease-out-expo);
+        }
+        .hover-lift:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 30px 60px -12px rgba(2, 132, 199, 0.18);
         }
 
-        .premium-btn {
-            background: var(--t-primary);
-            color: white !important;
-            transition: all 0.4s var(--ease-out-expo);
-            position: relative;
-            overflow: hidden;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
         }
-        .premium-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15);
-            filter: brightness(1.1);
-        }
-        .premium-btn:active { transform: translateY(1px); }
+        .animate-float { animation: float 6s ease-in-out infinite; }
 
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: var(--t-bg); }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--t-primary); }
-
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-        @keyframes reveal {
-            from { opacity: 0; transform: translateY(30px); }
+        @keyframes reveal-up {
+            from { opacity: 0; transform: translateY(40px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .animate-reveal { animation: reveal 0.8s var(--ease-out-expo) forwards; }
+        .reveal { animation: reveal-up 1s var(--ease-out-expo) forwards; }
 
-        @keyframes fade-in {
-            from { opacity: 0; }
-            to { opacity: 1; }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
         }
-        .animate-fade { animation: fade-in 0.6s var(--ease-out-expo) forwards; }
-
-        @keyframes popup {
-            from { opacity: 0; transform: scale(0.95) translateY(10px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-        .animate-popup { animation: popup 0.4s var(--ease-out-expo) forwards; }
-
-        * {
-            -webkit-tap-highlight-color: transparent;
+        .skeleton {
+            background: linear-gradient(90deg, #f1f5f9 25%, #f8fafc 50%, #f1f5f9 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
         }
 
         .mask-linear {
             -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
             mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
         }
+
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--t-primary); }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 <script type="importmap">
 {
@@ -141,7 +111,7 @@
 }
 </script>
 </head>
-<body class="theme-DEFAULT">
+<body>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
 </body>
