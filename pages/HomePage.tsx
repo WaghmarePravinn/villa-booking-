@@ -82,7 +82,7 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
   };
 
   return (
-    <div className="space-y-12 sm:space-y-24 pb-20 sm:pb-32 relative bg-[#fcfdfe] overflow-visible" onMouseMove={handleMouseMove}>
+    <div className="space-y-12 sm:space-y-20 pb-20 sm:pb-32 relative bg-[#fcfdfe] overflow-visible" onMouseMove={handleMouseMove}>
       
       {/* Live Notification */}
       {liveBooking && (
@@ -99,8 +99,8 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
         </div>
       )}
 
-      {/* Hero Section - Optimized for high visibility of Search Hub */}
-      <section className="relative min-h-[75vh] sm:min-h-[85vh] flex flex-col items-center justify-center px-4 overflow-visible pt-12 sm:pt-20">
+      {/* Hero Section - Tightened for instant filter visibility */}
+      <section className="relative min-h-[60vh] sm:min-h-[75vh] flex flex-col items-center justify-center px-4 overflow-visible pt-4 sm:pt-6">
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
           <div 
             className="w-full h-full transition-transform duration-1000 ease-out opacity-20 sm:opacity-10"
@@ -111,29 +111,29 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
           </div>
         </div>
 
-        <div className="relative z-10 text-center max-w-6xl mb-8 sm:mb-10 animate-fade">
-          <div className="mb-4 sm:mb-6 flex items-center justify-center gap-4 sm:gap-6">
+        <div className="relative z-10 text-center max-w-6xl mb-6 sm:mb-8 animate-fade">
+          <div className="mb-3 sm:mb-4 flex items-center justify-center gap-4 sm:gap-6">
              <div className="h-[1px] w-6 sm:w-12 bg-slate-200"></div>
-             <span className="text-[7px] sm:text-[10px] font-black uppercase tracking-[0.4em] sm:tracking-[0.6em] text-slate-400 text-center">{settings.promoText}</span>
+             <span className="text-[7px] sm:text-[9px] font-black uppercase tracking-[0.4em] sm:tracking-[0.6em] text-slate-400 text-center">{settings.promoText}</span>
              <div className="h-[1px] w-6 sm:w-12 bg-slate-200"></div>
           </div>
           
-          <h1 className="text-4xl sm:text-6xl md:text-8xl lg:text-[9rem] font-bold font-serif mb-4 sm:mb-6 drop-shadow-2xl uppercase tracking-tighter text-theme-shimmer leading-[1.1] sm:leading-[0.85] flex flex-col items-center">
+          <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-[8rem] font-bold font-serif mb-3 sm:mb-5 drop-shadow-2xl uppercase tracking-tighter text-theme-shimmer leading-[1.1] sm:leading-[0.85] flex flex-col items-center">
             {BRAND_NAME.split(' ')[0]} 
-            <span className="text-sm sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.2em] sm:tracking-[0.3em] font-light italic text-slate-300 normal-case mt-1 sm:mt-2">PRIVATE SANCTUARIES</span>
+            <span className="text-sm sm:text-xl md:text-2xl lg:text-3xl tracking-[0.2em] sm:tracking-[0.3em] font-light italic text-slate-300 normal-case mt-1 sm:mt-2">PRIVATE SANCTUARIES</span>
           </h1>
           
-          <p className="text-xs sm:text-lg md:text-xl mb-6 sm:mb-10 text-slate-500 max-w-2xl mx-auto font-medium leading-relaxed">
+          <p className="text-xs sm:text-base md:text-lg mb-4 sm:mb-6 text-slate-500 max-w-xl mx-auto font-medium leading-relaxed">
             Experience the pinnacle of Indian luxury. Hand-picked retreats curated for the discerning traveler.
           </p>
         </div>
 
-        {/* Re-designed Search Hub - Elevated and styled based on requested aesthetics */}
+        {/* Search Hub - Elevated position for immediate use */}
         <div className="relative z-[100] w-full max-w-6xl animate-reveal [animation-delay:200ms] overflow-visible">
-          <div className="bg-white rounded-full sm:rounded-full soft-shadow flex flex-col md:flex-row items-stretch md:items-center p-2 sm:p-2 border border-slate-50 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)]">
+          <div className="bg-white rounded-full soft-shadow flex flex-col md:flex-row items-stretch md:items-center p-1.5 sm:p-2 border border-slate-50 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)]">
             
             {/* DESTINATION SECTION */}
-            <div className="flex-1 px-8 py-4 sm:py-6 relative group" ref={locationRef}>
+            <div className="flex-1 px-6 sm:px-8 py-3 sm:py-5 relative group" ref={locationRef}>
               <label className="block text-[8px] sm:text-[9px] font-black text-sky-600 uppercase tracking-widest mb-1 sm:mb-2 text-left">Destination</label>
               <div className="flex items-center gap-3">
                  <i className="fa-solid fa-location-dot text-sky-200 text-sm"></i>
@@ -151,7 +151,7 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
                 />
               </div>
               
-              {/* Suggestion Dropdown - High Visibility */}
+              {/* Suggestion Dropdown */}
               {showLocationSuggestions && (
                 <div className="absolute top-[calc(100%+1.5rem)] left-0 w-full md:w-[480px] bg-white rounded-[2.5rem] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.25)] border border-slate-100 p-6 sm:p-8 z-[200] animate-popup overflow-visible">
                   <div className="flex justify-between items-center mb-6 border-b border-slate-50 pb-4">
@@ -185,10 +185,10 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
             </div>
 
             {/* VERTICAL DIVIDER */}
-            <div className="hidden md:block w-[1px] h-12 bg-sky-50"></div>
+            <div className="hidden md:block w-[1px] h-10 bg-sky-50"></div>
             
             {/* BOOKING WINDOWS SECTION */}
-            <div className="flex-1 px-8 py-4 sm:py-6 cursor-pointer text-left group hover:bg-slate-50/30 transition-colors rounded-3xl"
+            <div className="flex-1 px-6 sm:px-8 py-3 sm:py-5 cursor-pointer text-left group hover:bg-slate-50/30 transition-colors rounded-3xl"
               onClick={() => setShowPicker(true)}>
               <div className="flex items-center gap-2 mb-1 sm:mb-2">
                  <i className="fa-solid fa-calendar-days text-sky-600 text-[10px]"></i>
@@ -206,13 +206,13 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
             </div>
 
             {/* VERTICAL DIVIDER */}
-            <div className="hidden md:block w-[1px] h-12 bg-sky-50"></div>
+            <div className="hidden md:block w-[1px] h-10 bg-sky-50"></div>
 
             {/* EXPLORE BUTTON SECTION */}
-            <div className="p-2 w-full md:w-auto">
+            <div className="p-1 sm:p-2 w-full md:w-auto">
               <button 
                 onClick={handleSearch} 
-                className="w-full md:w-auto px-10 sm:px-14 py-5 sm:py-6 rounded-full font-black text-[10px] sm:text-[11px] uppercase tracking-[0.2em] flex items-center justify-center gap-4 shadow-xl transition-all active:scale-95 border-none"
+                className="w-full md:w-auto px-8 sm:px-12 py-4 sm:py-5 rounded-full font-black text-[10px] sm:text-[11px] uppercase tracking-[0.2em] flex items-center justify-center gap-4 shadow-xl transition-all active:scale-95 border-none"
                 style={{ background: '#FF9B42', color: 'white' }}
               >
                 EXPLORE SANCTUM <i className="fa-solid fa-arrow-right-long text-xs"></i>
@@ -255,6 +255,7 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-12">
           {featuredVillas.map(v => (
+            // Fixed typo: changed handleViewDetails to onViewDetails
             <VillaCard key={v.id} villa={v} whatsappNumber={settings.whatsappNumber} onViewDetails={onViewDetails} />
           ))}
         </div>
@@ -285,7 +286,7 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
       </section>
 
       {showPicker && (
-        <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 bg-slate-900/30 backdrop-blur-md animate-reveal" onClick={() => setShowPicker(false)}>
+        <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 sm:p-6 bg-slate-900/30 backdrop-blur-md animate-reveal" onClick={() => setShowPicker(false)}>
           <div onClick={e => e.stopPropagation()} className="w-full max-w-4xl">
             <DateRangePicker startDate={searchFilters.checkIn} endDate={searchFilters.checkOut} onChange={(s, e) => setSearchFilters({...searchFilters, checkIn: s, checkOut: e})} onClose={() => setShowPicker(false)} />
           </div>
