@@ -172,11 +172,21 @@ const VillaDetailPage: React.FC<VillaDetailPageProps> = ({ villa, settings, user
          </button>
       </div>
 
+      {/* REFACTORED DATE PICKER MODAL - STRICTLY CENTERED */}
       {showPicker && (
-        <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 sm:p-6 bg-slate-900/10 backdrop-blur-md animate-reveal" onClick={() => setShowPicker(false)}>
-           <div onClick={e => e.stopPropagation()} className="w-full max-w-4xl">
-              <DateRangePicker startDate={checkIn} endDate={checkOut} onChange={(s, e) => { setCheckIn(s); setCheckOut(e); }} onClose={() => setShowPicker(false)} />
-           </div>
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4" onClick={() => setShowPicker(false)}>
+          <div className="absolute inset-0 bg-slate-900/10 backdrop-blur-md"></div>
+          <div 
+            onClick={e => e.stopPropagation()} 
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl z-[2001]"
+          >
+            <DateRangePicker 
+              startDate={checkIn} 
+              endDate={checkOut} 
+              onChange={(s, e) => { setCheckIn(s); setCheckOut(e); }} 
+              onClose={() => setShowPicker(false)} 
+            />
+          </div>
         </div>
       )}
     </div>

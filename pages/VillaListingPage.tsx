@@ -25,6 +25,15 @@ const VillaListingPage: React.FC<VillaListingPageProps> = ({ villas, settings, o
 
   useEffect(() => { if (initialFilters) setFilters(initialFilters); }, [initialFilters]);
 
+  useEffect(() => {
+    if (showDatePicker) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+    return () => { document.body.style.overflow = 'auto'; };
+  }, [showDatePicker]);
+
   // Sync locations from live data
   const dynamicLocations = useMemo(() => {
     const locSet = new Set<string>();
@@ -194,10 +203,19 @@ const VillaListingPage: React.FC<VillaListingPageProps> = ({ villas, settings, o
         </div>
       </div>
 
+      {/* REFACTORED DATE PICKER MODAL - STRICTLY CENTERED VIEWPORT OVERLAY */}
       {showDatePicker && (
-        <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 bg-slate-900/30 backdrop-blur-md animate-reveal" onClick={() => setShowDatePicker(false)}>
-          <div onClick={e => e.stopPropagation()} className="w-full max-w-4xl">
-            <DateRangePicker startDate={filters.checkIn || ''} endDate={filters.checkOut || ''} onChange={(s, e) => setFilters({...filters, checkIn: s, checkOut: e})} onClose={() => setShowDatePicker(false)} />
+        <div className="fixed inset-0 z-[2500] bg-slate-900/40 backdrop-blur-xl animate-fade" onClick={() => setShowDatePicker(false)}>
+          <div 
+            onClick={e => e.stopPropagation()} 
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full flex items-center justify-center p-4 z-[2501] animate-scale"
+          >
+            <DateRangePicker 
+              startDate={filters.checkIn || ''} 
+              endDate={filters.checkOut || ''} 
+              onChange={(s, e) => setFilters({...filters, checkIn: s, checkOut: e})} 
+              onClose={() => setShowDatePicker(false)} 
+            />
           </div>
         </div>
       )}

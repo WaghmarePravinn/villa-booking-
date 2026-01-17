@@ -44,6 +44,15 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
   }, []);
 
   useEffect(() => {
+    if (showPicker) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+    return () => { document.body.style.overflow = 'auto'; };
+  }, [showPicker]);
+
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (locationRef.current && !locationRef.current.contains(event.target as Node)) {
         setShowLocationSuggestions(false);
@@ -258,10 +267,19 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
         </div>
       </section>
 
+      {/* REFACTORED DATE PICKER MODAL - STRICTLY CENTERED VIEWPORT OVERLAY */}
       {showPicker && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 sm:p-8 bg-slate-900/30 backdrop-blur-xl animate-reveal" onClick={() => setShowPicker(false)}>
-          <div onClick={e => e.stopPropagation()} className="w-full max-w-3xl">
-            <DateRangePicker startDate={searchFilters.checkIn || ''} endDate={searchFilters.checkOut || ''} onChange={(s, e) => setSearchFilters({...searchFilters, checkIn: s, checkOut: e})} onClose={() => setShowPicker(false)} />
+        <div className="fixed inset-0 z-[3000] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xl animate-fade" onClick={() => setShowPicker(false)}>
+          <div 
+            onClick={e => e.stopPropagation()} 
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl z-[3001] flex items-center justify-center"
+          >
+            <DateRangePicker 
+              startDate={searchFilters.checkIn || ''} 
+              endDate={searchFilters.checkOut || ''} 
+              onChange={(s, e) => setSearchFilters({...searchFilters, checkIn: s, checkOut: e})} 
+              onClose={() => setShowPicker(false)} 
+            />
           </div>
         </div>
       )}
