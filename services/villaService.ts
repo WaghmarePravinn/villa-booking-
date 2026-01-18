@@ -18,9 +18,7 @@ const generateUUID = () => {
 
 const isValidUUID = (id: any): boolean => {
   if (!id || typeof id !== 'string') return false;
-  // Aggressive cleanup: remove all whitespace including hidden characters
   const cleanedId = id.replace(/\s/g, '');
-  // Simplified check: roughly 32-36 chars and contains at least one dash
   return cleanedId.length >= 32 && cleanedId.length <= 38 && cleanedId.includes('-');
 };
 
@@ -36,7 +34,6 @@ const fileToBase64 = (file: File): Promise<string> => {
 const getLocalVillas = (): Villa[] => {
   const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
   if (!saved) return INITIAL_VILLAS;
-  
   try {
     const parsed = JSON.parse(saved);
     return parsed.map((v: any) => ({
@@ -56,10 +53,7 @@ const saveLocalVillas = (villas: Villa[]) => {
 const parsePostgresArray = (input: any): string[] => {
   if (Array.isArray(input)) return input.filter(Boolean);
   if (!input || typeof input !== 'string') return [];
-  
   const str = input.trim();
-  
-  // Handle Postgres string representation of arrays: {"item1","item2"}
   if (str.startsWith('{') && str.endsWith('}')) {
     return str
       .substring(1, str.length - 1)
@@ -67,43 +61,37 @@ const parsePostgresArray = (input: any): string[] => {
       .map(item => item.replace(/^"|"$/g, '').trim())
       .filter(Boolean);
   }
-  
   try {
     const parsed = JSON.parse(str);
     return Array.isArray(parsed) ? parsed : [str];
   } catch (e) {
-    // Handle comma-separated fallback
     return str.split(',').map(s => s.trim()).filter(Boolean);
   }
 };
 
 const mapFromDb = (v: any): Villa => {
-  // Logic to handle multiple potential column names for backward compatibility
-  const rawImageUrls = (v.image_urls && v.image_urls.length > 0) ? v.image_urls : v.image_url;
-  const rawVideoUrls = (v.video_urls && v.video_urls.length > 0) ? v.video_urls : v.video_url;
-
   return {
     id: v.id,
     name: v.name || "Unnamed Property",
-    location: v.location || "Unknown Location",
+    location: v.location || "",
     pricePerNight: Number(v.price_per_night ?? 0),
     bedrooms: Number(v.bedrooms ?? 0),
     bathrooms: Number(v.bathrooms ?? 0),
     capacity: Number(v.capacity ?? 0),
+    numRooms: Number(v.num_rooms ?? v.bedrooms ?? 0),
     description: v.description || "",
     longDescription: v.long_description || "",
-    imageUrls: parsePostgresArray(rawImageUrls),
-    videoUrls: parsePostgresArray(rawVideoUrls),
+    imageUrls: parsePostgresArray(v.image_urls || [v.image_url]),
+    videoUrls: parsePostgresArray(v.video_urls),
     amenities: parsePostgresArray(v.amenities),
     includedServices: parsePostgresArray(v.included_services),
     isFeatured: Boolean(v.is_featured),
     rating: Number(v.rating ?? 5),
-    ratingCount: Number(v.rating_count ?? 0),
-    numRooms: Number(v.num_rooms ?? v.bedrooms ?? 0),
-    mealsAvailable: Boolean(v.meals_available),
-    petFriendly: Boolean(v.pet_friendly),
+    rating_count: Number(v.rating_count ?? 0), // Adjusted to match schema key
+    mealsAvailable: Boolean(v.meals_available ?? true),
+    petFriendly: Boolean(v.pet_friendly ?? true),
     refundPolicy: v.refund_policy || ""
-  };
+  } as any; // Cast as any to handle exact key matching for UI
 };
 
 const mapToDb = (v: Partial<Villa>) => {
@@ -118,17 +106,13 @@ const mapToDb = (v: Partial<Villa>) => {
   if (v.longDescription !== undefined) payload.long_description = v.longDescription;
   
   if (v.imageUrls !== undefined) {
-    // Clean and filter URLs. We support absolute URLs (http/https), protocol-relative (//), and data URIs.
     const cleanUrls = v.imageUrls.filter(url => url && (url.includes('://') || url.startsWith('//') || url.startsWith('data:')));
     payload.image_urls = cleanUrls;
-    // Fallback for singular column name
-    payload.image_url = cleanUrls.length > 0 ? cleanUrls[0] : null;
+    payload.image_url = cleanUrls.length > 0 ? cleanUrls[0] : null; // Sync both columns
   }
   
   if (v.videoUrls !== undefined) {
-    const cleanUrls = v.videoUrls.filter(url => url && (url.includes('://') || url.startsWith('//') || url.startsWith('data:')));
-    payload.video_urls = cleanUrls;
-    payload.video_url = cleanUrls.length > 0 ? cleanUrls[0] : null;
+    payload.video_urls = v.videoUrls.filter(url => url && (url.includes('://') || url.startsWith('//') || url.startsWith('data:')));
   }
   
   if (v.amenities !== undefined) payload.amenities = v.amenities;
@@ -139,6 +123,7 @@ const mapToDb = (v: Partial<Villa>) => {
   if (v.petFriendly !== undefined) payload.pet_friendly = Boolean(v.petFriendly);
   if (v.refundPolicy !== undefined) payload.refund_policy = v.refundPolicy;
   if (v.rating !== undefined) payload.rating = Number(v.rating);
+  // @ts-ignore - Handle the explicit schema key for rating count
   if (v.ratingCount !== undefined) payload.rating_count = Number(v.ratingCount);
   return payload;
 };
@@ -222,21 +207,15 @@ export const uploadMedia = async (file: File, folder: 'images' | 'videos', onPro
     if (onProgress) onProgress(100);
     return await fileToBase64(file);
   }
-  
   const fileExt = file.name.split('.').pop();
   const fileName = `${generateUUID()}.${fileExt}`;
   const filePath = `${folder}/${fileName}`;
-  
   try {
-    // Note: Standard Supabase-js v2 doesn't have a built-in progress callback for upload()
-    // but we simulate reaching 100% when the promise resolves.
     const { error } = await supabase.storage.from('villa-media').upload(filePath, file, {
       cacheControl: '3600',
       upsert: false
     });
-    
     if (error) throw handleDbError(error, 'storage');
-    
     if (onProgress) onProgress(100);
     const { data: { publicUrl } } = supabase.storage.from('villa-media').getPublicUrl(filePath);
     return publicUrl;

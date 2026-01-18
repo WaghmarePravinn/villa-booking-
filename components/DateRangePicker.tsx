@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 
 interface DateRangePickerProps {
@@ -51,8 +52,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, endDate, o
     for (let i = 0; i < firstDay; i++) days.push(null);
     for (let i = 1; i <= daysInMonth; i++) days.push(new Date(year, month, i));
     
-    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-    const monthName = date.toLocaleString('default', { month: 'long' }) || monthNames[month];
+    const monthName = date.toLocaleString('default', { month: 'long' });
     
     return {
       name: monthName,
@@ -61,6 +61,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, endDate, o
     };
   };
 
+  // Keep dual month on desktop but in a tighter container
   const months = useMemo(() => {
     const d1 = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
     const d2 = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1);
@@ -91,7 +92,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, endDate, o
       } else {
         onChange(startDate, dateStr);
         if (onClose) {
-          setTimeout(onClose, 300);
+          setTimeout(onClose, 200);
         }
       }
     }
@@ -129,44 +130,46 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, endDate, o
 
   return (
     <div 
-      className="bg-white rounded-[2rem] sm:rounded-[3rem] shadow-[0_40px_100px_rgba(0,0,0,0.3)] border border-gray-100 p-4 sm:p-10 w-full max-w-4xl max-h-[90vh] overflow-y-auto no-scrollbar relative animate-scale"
+      className="bg-white rounded-[1.5rem] sm:rounded-[2rem] shadow-[0_20px_60px_rgba(0,0,0,0.15)] border border-slate-100 p-4 sm:p-6 w-full max-w-[340px] sm:max-max-w-none sm:w-auto animate-scale"
       onClick={(e) => e.stopPropagation()}
     >
-      <div className="flex justify-between items-center border-b border-gray-100 mb-4 sm:mb-8 pb-3 sm:pb-5 sticky top-0 bg-white z-[30]">
-        <div className="flex flex-col text-left">
-          <span className="text-[8px] sm:text-[10px] font-black text-amber-600 uppercase tracking-widest mb-0.5">Select Stay</span>
-          <span className="text-lg sm:text-2xl font-bold text-slate-900 font-serif">Stay Dates</span>
+      {/* Mini Header */}
+      <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-50">
+        <div className="text-left">
+          <p className="text-[7px] font-black text-sky-600 uppercase tracking-widest leading-none mb-1">Stay Schedule</p>
+          <p className="text-sm font-bold text-slate-900 font-serif leading-none">Choose Dates</p>
         </div>
         <button 
           onClick={(e) => { e.stopPropagation(); onChange('', ''); }}
-          className="px-3 py-1.5 rounded-xl text-[9px] sm:text-[11px] font-black text-slate-400 uppercase tracking-widest hover:text-red-500 transition-all border border-transparent hover:border-red-50 hover:bg-red-50/50"
+          className="text-[9px] font-black text-slate-400 uppercase tracking-widest hover:text-red-500 transition-colors"
         >
-          Clear Selection
+          Reset
         </button>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-8 md:gap-16 relative">
+      <div className="flex flex-col md:flex-row gap-6 md:gap-8 relative">
+        {/* Nav Controls - More discrete */}
         <button 
           onClick={handlePrevMonth}
-          className="absolute left-[-5px] top-0 p-2 sm:p-3 hover:bg-gray-50 rounded-2xl transition-all z-20 group"
+          className="absolute left-0 top-0 p-1.5 hover:bg-slate-50 rounded-lg transition-all z-20"
         >
-          <i className="fa-solid fa-chevron-left text-xs text-slate-300 group-hover:text-amber-500"></i>
+          <i className="fa-solid fa-chevron-left text-[10px] text-slate-400"></i>
         </button>
         <button 
           onClick={handleNextMonth}
-          className="absolute right-[-5px] top-0 p-2 sm:p-3 hover:bg-gray-50 rounded-2xl transition-all z-20 group"
+          className="absolute right-0 top-0 p-1.5 hover:bg-slate-50 rounded-lg transition-all z-20"
         >
-          <i className="fa-solid fa-chevron-right text-xs text-slate-300 group-hover:text-amber-500"></i>
+          <i className="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
         </button>
 
         {months.map((m, mIdx) => (
-          <div key={`${m.name}-${m.year}-${mIdx}`} className={`flex-1 ${mIdx === 1 ? 'hidden md:block' : ''}`}>
-            <h3 className="text-center font-bold text-slate-800 mb-4 sm:mb-6 font-serif text-base sm:text-xl">
+          <div key={`${m.name}-${m.year}-${mIdx}`} className={`flex-1 ${mIdx === 1 ? 'hidden md:block' : ''} min-w-[260px]`}>
+            <h3 className="text-center font-bold text-slate-800 mb-4 font-serif text-sm">
               {m.name} {m.year}
             </h3>
-            <div className="grid grid-cols-7 gap-y-0.5 sm:gap-y-1">
+            <div className="grid grid-cols-7 gap-y-1">
               {daysOfWeek.map(d => (
-                <div key={d} className="text-center text-[8px] sm:text-[10px] font-black text-slate-300 uppercase mb-2 tracking-widest">{d}</div>
+                <div key={d} className="text-center text-[8px] font-black text-slate-300 uppercase mb-1 tracking-widest">{d}</div>
               ))}
               {m.days.map((day, dIdx) => {
                 if (!day) return <div key={`empty-${mIdx}-${dIdx}`} />;
@@ -183,11 +186,11 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, endDate, o
                     onMouseLeave={() => setHoverDate(null)}
                     onClick={(e) => handleDateClick(e, day)}
                     className={`
-                      relative h-8 sm:h-11 w-full flex items-center justify-center text-[10px] sm:text-sm font-bold transition-all
-                      ${past ? 'text-gray-200 cursor-not-allowed opacity-30' : 'text-slate-700'}
-                      ${selected ? 'bg-slate-900 !text-white rounded-full z-20 shadow-md sm:shadow-lg' : ''}
-                      ${range && !selected ? 'bg-amber-50 text-amber-900' : ''}
-                      ${!past && !selected && !range ? 'hover:bg-gray-100 rounded-xl' : ''}
+                      relative h-8 sm:h-9 w-full flex items-center justify-center text-[10px] sm:text-xs font-bold transition-all
+                      ${past ? 'text-slate-100 cursor-not-allowed' : 'text-slate-600'}
+                      ${selected ? 'bg-slate-900 !text-white rounded-lg z-20 shadow-sm' : ''}
+                      ${range && !selected ? 'bg-sky-50 text-sky-900' : ''}
+                      ${!past && !selected && !range ? 'hover:bg-slate-50 rounded-lg' : ''}
                     `}
                   >
                     {day.getDate()}
@@ -199,26 +202,25 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, endDate, o
         ))}
       </div>
 
-      <div className="mt-6 sm:mt-10 pt-4 sm:pt-6 border-t border-gray-100 flex items-center justify-between sticky bottom-[-16px] sm:bottom-[-20px] bg-white z-[30] pb-2">
-         <div className="flex gap-4 sm:gap-6 items-center">
-            <div className="flex flex-col text-left">
-              <span className="text-[7px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest">Arrival</span>
-              <span className="text-[11px] sm:text-sm font-bold text-slate-900">{startDate ? startDate.split('-').reverse().join('/') : '--/--/--'}</span>
+      {/* Tighter Footer */}
+      <div className="mt-6 pt-4 border-t border-slate-50 flex items-center justify-between gap-4">
+         <div className="flex gap-3 items-center">
+            <div className="text-left">
+              <span className="text-[7px] font-black text-slate-300 uppercase tracking-widest block leading-none mb-0.5">Check-In</span>
+              <span className="text-[10px] font-bold text-slate-900">{startDate ? startDate.split('-').reverse().slice(0,2).join('/') : '--/--'}</span>
             </div>
-            <i className="fa-solid fa-arrow-right-long text-amber-300 text-xs"></i>
-            <div className="flex flex-col text-left">
-              <span className="text-[7px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest">Departure</span>
-              <span className="text-[11px] sm:text-sm font-bold text-slate-900">{endDate ? endDate.split('-').reverse().join('/') : '--/--/--'}</span>
+            <div className="w-3 h-[1px] bg-slate-100"></div>
+            <div className="text-left">
+              <span className="text-[7px] font-black text-slate-300 uppercase tracking-widest block leading-none mb-0.5">Check-Out</span>
+              <span className="text-[10px] font-bold text-slate-900">{endDate ? endDate.split('-').reverse().slice(0,2).join('/') : '--/--'}</span>
             </div>
          </div>
-         <div className="flex gap-2">
-           <button 
-             onClick={(e) => { e.stopPropagation(); onClose?.(); }}
-             className="px-5 sm:px-8 py-3 sm:py-4 bg-slate-900 text-white rounded-xl sm:rounded-2xl text-[9px] sm:text-[11px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all"
-           >
-             Confirm Dates
-           </button>
-         </div>
+         <button 
+           onClick={(e) => { e.stopPropagation(); onClose?.(); }}
+           className="px-5 py-2.5 bg-sky-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg hover:bg-sky-700 transition-colors"
+         >
+           Confirm Stay
+         </button>
       </div>
     </div>
   );
