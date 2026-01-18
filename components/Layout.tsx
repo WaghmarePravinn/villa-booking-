@@ -29,9 +29,16 @@ const Layout: React.FC<LayoutProps> = ({ children, user, settings, onLogout, onN
     }
   };
 
+  const getDashboardId = () => {
+    if (!user) return null;
+    return user.role === UserRole.ADMIN ? 'admin' : 'user-dashboard';
+  };
+
+  const dashboardId = getDashboardId();
+
   return (
     <div className="min-h-screen flex flex-col selection:bg-sky-100 selection:text-sky-900 bg-[#fcfdfe]">
-      {/* Top Banner - Higher contrast for mobile legibility */}
+      {/* Top Banner */}
       <div 
         className="fixed top-0 left-0 right-0 z-[150] overflow-hidden py-1 sm:py-1.5 shadow-sm"
         style={{ backgroundColor: 'var(--t-marquee-bg)', color: 'var(--t-marquee-text)' }}
@@ -49,7 +56,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, settings, onLogout, onN
         </div>
       </div>
 
-      {/* Top Navigation - Simplified for mobile */}
+      {/* Top Navigation */}
       <nav className="fixed top-6 sm:top-8 left-0 right-0 z-[140] transition-all duration-700 glass-panel shadow-sm border-b border-white/20 h-14 sm:h-18">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 h-full">
           <div className="flex justify-between items-center h-full">
@@ -92,11 +99,22 @@ const Layout: React.FC<LayoutProps> = ({ children, user, settings, onLogout, onN
             {/* User Menu & CTA */}
             <div className="flex items-center gap-2 sm:gap-4">
               {user ? (
-                <div className="flex items-center gap-1.5 bg-slate-50 p-1 rounded-xl border border-slate-100 shadow-sm">
-                  <span className="hidden md:block text-[10px] font-black text-slate-800 px-3">{user.username}</span>
+                <div className="flex items-center gap-1.5 sm:gap-3 bg-white p-1 rounded-xl border border-slate-100 shadow-sm">
+                  {dashboardId && (
+                    <button 
+                      onClick={() => onNavigate(dashboardId)}
+                      className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-[8px] sm:text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${currentPage === dashboardId ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:text-slate-900 bg-slate-50'}`}
+                    >
+                      <i className={`fa-solid ${user.role === UserRole.ADMIN ? 'fa-user-shield' : 'fa-gauge-high'}`}></i>
+                      <span className="hidden sm:inline">{user.role === UserRole.ADMIN ? 'Admin Panel' : 'Dashboard'}</span>
+                    </button>
+                  )}
+                  <div className="h-4 w-[1px] bg-slate-100 hidden sm:block"></div>
+                  <span className="hidden md:block text-[9px] font-black text-slate-800 px-1 opacity-60">{user.username}</span>
                   <button 
                     onClick={onLogout}
-                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white flex items-center justify-center text-slate-400 hover:text-red-500 shadow-sm transition-all"
+                    title="Logout"
+                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
                   >
                     <i className="fa-solid fa-power-off text-xs"></i>
                   </button>
@@ -121,21 +139,32 @@ const Layout: React.FC<LayoutProps> = ({ children, user, settings, onLogout, onN
         </div>
       </nav>
 
-      {/* Mobile Navigation - Fixed Bottom for better reach and cleaner header */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-[150] px-4 py-3 bg-white/80 backdrop-blur-2xl border-t border-slate-100 shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
+      {/* Mobile Navigation - Enhanced with Dashboard link */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-[150] px-2 py-3 bg-white/80 backdrop-blur-2xl border-t border-slate-100 shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
         <div className="flex justify-around items-center">
           {navLinks.map((link) => (
             <button 
               key={link.id}
               onClick={() => handleLinkClick(link.id)} 
-              className={`flex flex-col items-center justify-center w-16 transition-all ${currentPage === link.id ? 'scale-110' : 'opacity-40'}`}
+              className={`flex flex-col items-center justify-center w-14 transition-all ${currentPage === link.id ? 'scale-110' : 'opacity-40'}`}
             >
               <i className={`fa-solid ${link.icon} text-lg mb-1 ${currentPage === link.id ? 'text-sky-600' : 'text-slate-900'}`}></i>
-              <span className={`text-[8px] font-black uppercase tracking-widest ${currentPage === link.id ? 'text-sky-600' : 'text-slate-500'}`}>
+              <span className={`text-[7px] font-black uppercase tracking-widest ${currentPage === link.id ? 'text-sky-600' : 'text-slate-500'}`}>
                 {link.label}
               </span>
             </button>
           ))}
+          {user && dashboardId && (
+             <button 
+               onClick={() => onNavigate(dashboardId)} 
+               className={`flex flex-col items-center justify-center w-14 transition-all ${currentPage === dashboardId ? 'scale-110' : 'opacity-40'}`}
+             >
+               <i className={`fa-solid ${user.role === UserRole.ADMIN ? 'fa-user-shield' : 'fa-gauge-high'} text-lg mb-1 ${currentPage === dashboardId ? 'text-amber-600' : 'text-slate-900'}`}></i>
+               <span className={`text-[7px] font-black uppercase tracking-widest ${currentPage === dashboardId ? 'text-amber-600' : 'text-slate-500'}`}>
+                 {user.role === UserRole.ADMIN ? 'Admin' : 'Me'}
+               </span>
+             </button>
+          )}
         </div>
       </div>
 
@@ -174,6 +203,9 @@ const Layout: React.FC<LayoutProps> = ({ children, user, settings, onLogout, onN
                   {navLinks.map(link => (
                     <li key={link.id}><button onClick={() => handleLinkClick(link.id)} className="hover:text-sky-400 transition-colors">{link.label}</button></li>
                   ))}
+                  {user && dashboardId && (
+                    <li><button onClick={() => onNavigate(dashboardId)} className="hover:text-amber-400 transition-colors">{user.role === UserRole.ADMIN ? 'Admin Mission Control' : 'Guest Dashboard'}</button></li>
+                  )}
                   <li><button onClick={() => onNavigate('about')} className="hover:text-sky-400 transition-colors">About Us</button></li>
                   <li><button className="hover:text-sky-400 transition-colors">Privacy</button></li>
                   <li><button className="hover:text-sky-400 transition-colors">Terms</button></li>

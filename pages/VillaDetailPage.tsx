@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Villa, User, SiteSettings } from '../types';
 import DateRangePicker from '../components/DateRangePicker';
@@ -25,6 +24,15 @@ const VillaDetailPage: React.FC<VillaDetailPageProps> = ({ villa, settings, user
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    if (showPicker) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+    return () => { document.body.style.overflow = 'auto'; };
+  }, [showPicker]);
 
   const handleWhatsApp = async () => {
     try {
@@ -172,13 +180,12 @@ const VillaDetailPage: React.FC<VillaDetailPageProps> = ({ villa, settings, user
          </button>
       </div>
 
-      {/* REFACTORED DATE PICKER MODAL - STRICTLY CENTERED */}
+      {/* REFACTORED DATE PICKER MODAL - STRICTLY CENTERED VIEWPORT OVERLAY */}
       {showPicker && (
-        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4" onClick={() => setShowPicker(false)}>
-          <div className="absolute inset-0 bg-slate-900/10 backdrop-blur-md"></div>
+        <div className="fixed inset-0 z-[3000] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xl animate-fade" onClick={() => setShowPicker(false)}>
           <div 
             onClick={e => e.stopPropagation()} 
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl z-[2001]"
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl z-[3001] flex items-center justify-center"
           >
             <DateRangePicker 
               startDate={checkIn} 

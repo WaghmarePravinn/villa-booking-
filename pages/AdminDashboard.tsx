@@ -5,7 +5,7 @@ import { generateVillaFromPrompt, generateVillaDescription } from '../services/g
 import { uploadMedia, verifyCloudConnectivity } from '../services/villaService';
 import { updateSettings } from '../services/settingsService';
 import { subscribeToLeads, updateLeadStatus, deleteLead } from '../services/leadService';
-import { subscribeToTestimonials, deleteTestimonial } from '../services/testimonialService';
+import { subscribeToTestimonials, deleteTestimonial, addTestimonial, updateTestimonial } from '../services/testimonialService';
 import { subscribeToServices, createService, updateService, deleteService } from '../services/serviceService';
 
 interface AdminDashboardProps {
@@ -21,7 +21,7 @@ type AdminTab = 'inventory' | 'inquiries' | 'services' | 'reviews' | 'branding';
 
 interface ProgressState { active: boolean; message: string; percentage: number; error?: string | null; }
 
-const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAddVilla, onUpdateVilla, onDeleteVilla }) => {
+const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAddVilla, onUpdateVilla, onDeleteVilla, onRefreshData }) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('inventory');
   const [isEditing, setIsEditing] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -55,8 +55,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   
-  // Service Edit State
+  // Service & Testimonial Edit State
   const [editingService, setEditingService] = useState<Partial<Service> | null>(null);
+  const [editingTestimonial, setEditingTestimonial] = useState<Partial<Testimonial> | null>(null);
 
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -122,16 +123,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
     e.preventDefault();
     if (!formData.name || !formData.location || isUploading) return;
     setIsSyncing(true);
-    setProgress({ active: true, message: 'Syncing Changes...', percentage: 50, error: null });
+    setProgress({ active: true, message: 'Initiating Cloud Sync...', percentage: 20, error: null });
     try {
-      if (isEditing) await onUpdateVilla(formData as Villa);
-      else await onAddVilla(formData as Villa);
-      setProgress({ active: true, message: 'Registry Updated', percentage: 100, error: null });
-      setTimeout(() => setProgress(prev => ({ ...prev, active: false })), 1500);
+      if (isEditing) {
+        setProgress({ active: true, message: 'Updating Registry...', percentage: 60, error: null });
+        await onUpdateVilla(formData as Villa);
+      } else {
+        setProgress({ active: true, message: 'Publishing New Listing...', percentage: 60, error: null });
+        await onAddVilla(formData as Villa);
+      }
+      setProgress({ active: true, message: 'Sanctuary Registry Updated', percentage: 100, error: null });
+      setTimeout(() => setProgress(prev => ({ ...prev, active: false })), 2000);
       setIsEditing(false);
       setFormData({ name: '', location: '', pricePerNight: 0, bedrooms: 2, capacity: 4, description: '', imageUrls: [], videoUrls: [], amenities: ['Wi-Fi', 'AC'], includedServices: ['Daily Housekeeping'], isFeatured: false });
-    } catch (err: any) { setProgress({ active: true, message: 'Sync Error', percentage: 0, error: err.message }); }
-    finally { setIsSyncing(false); }
+    } catch (err: any) { 
+      setProgress({ active: true, message: 'Sync Interrupted', percentage: 0, error: err.message }); 
+    } finally { 
+      setIsSyncing(false); 
+    }
   };
 
   const handleMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video') => {
@@ -154,6 +163,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
 
   const handleUpdateBranding = async () => {
     setIsSyncing(true);
+    setProgress({ active: true, message: 'Propagating Global Branding...', percentage: 50, error: null });
     try {
       await updateSettings({ 
         promoText, 
@@ -165,9 +175,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
         primaryColor,
         offerPopup: offer
       });
-      alert('Global branding and settings synced successfully!');
+      setProgress({ active: true, message: 'Branding Synced', percentage: 100, error: null });
+      setTimeout(() => setProgress(p => ({...p, active: false})), 1500);
     } catch (err: any) {
-      alert('Sync Failed: ' + err.message);
+      setProgress({ active: true, message: 'Sync Failed', percentage: 0, error: err.message });
     } finally {
       setIsSyncing(false);
     }
@@ -184,15 +195,42 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
   const handleSaveService = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingService?.title) return;
+    setIsSyncing(true);
+    setProgress({ active: true, message: 'Syncing Concierge Service...', percentage: 50, error: null });
     try {
       if (editingService.id) {
         await updateService(editingService.id, editingService);
       } else {
         await createService(editingService as Omit<Service, 'id'>);
       }
+      setProgress({ active: true, message: 'Service Registry Updated', percentage: 100, error: null });
       setEditingService(null);
+      setTimeout(() => setProgress(p => ({...p, active: false})), 1500);
     } catch (err) {
-      console.error("Service sync failed", err);
+      setProgress({ active: true, message: 'Sync Failed', percentage: 0, error: 'Database error' });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleSaveTestimonial = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTestimonial?.name || !editingTestimonial?.content) return;
+    setIsSyncing(true);
+    setProgress({ active: true, message: 'Publishing Chronicle...', percentage: 50, error: null });
+    try {
+      if (editingTestimonial.id) {
+        await updateTestimonial(editingTestimonial.id, editingTestimonial);
+      } else {
+        await addTestimonial(editingTestimonial as Omit<Testimonial, 'id' | 'timestamp'>);
+      }
+      setProgress({ active: true, message: 'Guest chronicle updated', percentage: 100, error: null });
+      setEditingTestimonial(null);
+      setTimeout(() => setProgress(p => ({...p, active: false})), 1500);
+    } catch (err) {
+      setProgress({ active: true, message: 'Sync Failed', percentage: 0, error: 'Database error' });
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -219,10 +257,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12 animate-reveal bg-[#fcfdfe] min-h-screen">
-      {/* Dynamic Sync Manager Bar */}
+      
+      {/* Dynamic Sync Manager Bar - Real-time Status */}
       {progress.active && (
         <div className="fixed bottom-24 sm:bottom-10 right-4 sm:right-10 z-[500] animate-reveal">
-          <div className={`bg-white border border-slate-100 p-6 sm:p-10 rounded-2xl sm:rounded-[3rem] shadow-2xl w-72 sm:w-80 ${progress.error ? 'border-red-100' : ''}`}>
+          <div className={`bg-white border border-slate-100 p-6 sm:p-10 rounded-2xl sm:rounded-[3rem] shadow-2xl w-72 sm:w-80 ${progress.error ? 'border-red-100' : 'border-sky-50'}`}>
              <div className="flex items-center gap-4 sm:gap-6 mb-4 sm:mb-6">
                 <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-white ${progress.error ? 'bg-red-500' : 'bg-slate-900 animate-spin'}`}>
                   <i className={`fa-solid ${progress.error ? 'fa-triangle-exclamation' : 'fa-cloud-arrow-up'} text-xs sm:text-base`}></i>
@@ -234,7 +273,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
              </div>
              {!progress.error && (
                <div className="w-full h-1 bg-slate-50 rounded-full overflow-hidden mb-2">
-                 <div className="h-full bg-slate-900 transition-all duration-500" style={{ width: `${progress.percentage}%` }}></div>
+                 <div className="h-full bg-sky-500 transition-all duration-500" style={{ width: `${progress.percentage}%` }}></div>
                </div>
              )}
              {progress.error && <p className="text-[9px] font-bold text-red-500 leading-relaxed bg-red-50 p-3 rounded-xl">{progress.error}</p>}
@@ -249,7 +288,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
           <div className="flex items-center justify-center md:justify-start gap-3 mt-2 sm:mt-4">
             <span className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full ${cloudStatus.db ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></span>
             <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-[0.2em] sm:tracking-[0.4em] text-slate-400">
-              SUPABASE CLOUD: {cloudStatus.db ? 'CONNECTED' : 'OFFLINE'}
+              CLOUD STATUS: {cloudStatus.db ? 'SYNCHRONIZED' : 'INTERRUPTED'}
             </span>
           </div>
         </div>
@@ -262,6 +301,132 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
           ))}
         </div>
       </div>
+
+      {/* Inventory Tab - Enhanced with Full CRUD and Quick Search */}
+      {activeTab === 'inventory' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 sm:gap-16">
+          {/* Editor Sidebar */}
+          <div className="lg:col-span-5 space-y-8 sm:space-y-12">
+            <div className="bg-white p-8 sm:p-12 rounded-3xl sm:rounded-[4rem] shadow-xl border border-slate-50 text-left sticky top-32">
+              <div className="flex justify-between items-center mb-8">
+                <h2 className="text-2xl font-bold font-serif text-slate-900">{isEditing ? 'Modify Sanctuary' : 'New Listing'}</h2>
+                {isEditing && (
+                  <button 
+                    onClick={() => {
+                      setIsEditing(false);
+                      setFormData({ name: '', location: '', pricePerNight: 0, bedrooms: 2, capacity: 4, description: '', imageUrls: [], videoUrls: [], amenities: ['Wi-Fi', 'AC'], includedServices: ['Daily Housekeeping'], isFeatured: false });
+                    }} 
+                    className="text-[9px] font-black uppercase text-red-500 hover:underline"
+                  >
+                    Discard Changes
+                  </button>
+                )}
+              </div>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-1">Property Name</label>
+                    <input required className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm font-bold outline-none focus:ring-2 focus:ring-sky-500" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-1">Location</label>
+                    <input required className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm font-bold outline-none focus:ring-2 focus:ring-sky-500" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-1">Rate / Night</label>
+                      <input type="number" required className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm font-bold outline-none" value={formData.pricePerNight} onChange={e => setFormData({...formData, pricePerNight: Number(e.target.value)})} />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-1">Guest Capacity</label>
+                      <input type="number" required className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm font-bold outline-none" value={formData.capacity} onChange={e => setFormData({...formData, capacity: Number(e.target.value)})} />
+                    </div>
+                  </div>
+                </div>
+                <button type="submit" disabled={isSyncing} className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl active:scale-95 transition-all">
+                  {isSyncing ? 'SYNCING...' : (isEditing ? 'COMMIT UPDATES' : 'PUBLISH SANCTUARY')}
+                </button>
+              </form>
+            </div>
+          </div>
+
+          {/* Catalog List */}
+          <div className="lg:col-span-7 space-y-8">
+             <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-white p-4 rounded-3xl border border-slate-50 shadow-sm">
+                <div className="relative w-full sm:w-auto flex-grow max-w-md">
+                   <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"></i>
+                   <input 
+                      placeholder="Search Registry..." 
+                      className="w-full pl-12 pr-6 py-3 bg-slate-50 rounded-xl text-xs font-bold border-none outline-none focus:ring-2 focus:ring-sky-500"
+                      value={searchTerm}
+                      onChange={e => setSearchTerm(e.target.value)}
+                   />
+                </div>
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">{filteredVillas.length} Assets Found</p>
+             </div>
+
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {filteredVillas.map(v => (
+                  <div key={v.id} className="bg-white p-5 rounded-[2.5rem] border border-slate-50 flex items-center gap-5 text-left group hover-lift shadow-sm hover:shadow-xl transition-all">
+                    <img src={v.imageUrls[0]} className="w-20 h-20 rounded-2xl object-cover shadow-sm grayscale group-hover:grayscale-0 transition-all duration-700" alt="" />
+                    <div className="flex-grow min-w-0">
+                       <h3 className="font-black text-slate-900 truncate text-sm">{v.name}</h3>
+                       <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-3">{v.location}</p>
+                       <div className="flex gap-2">
+                          <button onClick={() => handleEdit(v)} className="w-8 h-8 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center hover:bg-sky-600 hover:text-white transition-all"><i className="fa-solid fa-pen-to-square text-[10px]"></i></button>
+                          <button onClick={() => setVillaToDelete(v)} className="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-600 hover:text-white transition-all"><i className="fa-solid fa-trash text-[10px]"></i></button>
+                       </div>
+                    </div>
+                  </div>
+                ))}
+             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reviews Tab */}
+      {activeTab === 'reviews' && (
+        <div className="space-y-10 animate-fade">
+          <div className="flex justify-between items-center mb-10">
+            <h2 className="text-3xl font-bold font-serif text-slate-900">Guest Chronicles</h2>
+            <button 
+              onClick={() => setEditingTestimonial({ name: '', content: '', rating: 5, category: 'Trip', avatar: `https://i.pravatar.cc/150?u=${Date.now()}` })}
+              className="px-8 py-4 bg-orange-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-slate-900 transition-all"
+            >
+              Add New Chronicle
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {testimonials.map(t => (
+              <div key={t.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-50 shadow-lg group hover-lift text-left">
+                <div className="flex justify-between items-start mb-6">
+                  <div className="flex gap-1 text-amber-500 text-[10px]">
+                    {[...Array(t.rating)].map((_, i) => <i key={i} className="fa-solid fa-star"></i>)}
+                  </div>
+                  <span className="bg-slate-50 text-slate-400 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest">
+                    {t.category}
+                  </span>
+                </div>
+                <p className="text-slate-600 text-sm italic font-medium mb-10 leading-relaxed truncate-2-lines">"{t.content}"</p>
+                <div className="flex items-center justify-between border-t border-slate-50 pt-6">
+                  <div className="flex items-center gap-3">
+                    <img src={t.avatar} className="w-10 h-10 rounded-xl object-cover shadow-sm" alt="" />
+                    <div className="min-w-0">
+                      <p className="font-bold text-slate-900 text-sm truncate">{t.name}</p>
+                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Verified Guest</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => setEditingTestimonial(t)} className="w-8 h-8 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center hover:bg-sky-600 hover:text-white transition-all"><i className="fa-solid fa-pen-to-square text-[10px]"></i></button>
+                    <button onClick={() => setTestimonialToDelete(t)} className="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-600 hover:text-white transition-all"><i className="fa-solid fa-trash text-[10px]"></i></button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Branding Tab */}
       {activeTab === 'branding' && (
@@ -295,129 +460,56 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                      </div>
                   </div>
 
-                  <div className="space-y-3">
-                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Live Promo Marquee</label>
-                     <textarea rows={2} className="w-full px-6 py-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm font-bold resize-none" value={promoText} onChange={e => setPromoText(e.target.value)} />
-                  </div>
-
-                  <div className="space-y-6 pt-6 border-t border-slate-50">
-                     <h3 className="text-lg font-bold font-serif text-slate-900">Experience Themes</h3>
-                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                        {Object.values(AppTheme).map(theme => (
-                          <button key={theme} onClick={() => setActiveTheme(theme)} 
-                            className={`p-6 rounded-[2rem] text-center transition-all border ${activeTheme === theme ? 'bg-slate-900 text-white border-slate-900 shadow-xl' : 'bg-slate-50 text-slate-400 border-slate-100 hover:bg-white'}`}>
-                             <i className={`fa-solid ${getThemeIcon(theme)} text-xl mb-4 block`}></i>
-                             <span className="text-[9px] font-black uppercase tracking-widest">{theme.replace('_', ' ')}</span>
-                          </button>
-                        ))}
-                     </div>
-                  </div>
-
-                  <div className="bg-slate-50 p-8 rounded-[2.5rem] space-y-8">
-                     <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-bold font-serif text-slate-900">Offer Announcement</h3>
-                        <button onClick={() => setOffer(o => ({...o, enabled: !o.enabled}))} className={`w-14 h-8 rounded-full transition-all relative ${offer.enabled ? 'bg-emerald-500' : 'bg-slate-300'}`}>
-                           <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all ${offer.enabled ? 'right-1' : 'left-1'}`}></div>
-                        </button>
-                     </div>
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <input placeholder="Offer Heading" className="w-full px-5 py-3 rounded-xl border border-slate-100 text-xs font-bold" value={offer.title} onChange={e => setOffer({...offer, title: e.target.value})} />
-                        <input placeholder="Button Text" className="w-full px-5 py-3 rounded-xl border border-slate-100 text-xs font-bold" value={offer.buttonText} onChange={e => setOffer({...offer, buttonText: e.target.value})} />
-                        <textarea placeholder="Description" rows={2} className="md:col-span-2 w-full px-5 py-3 rounded-xl border border-slate-100 text-xs font-medium" value={offer.description} onChange={e => setOffer({...offer, description: e.target.value})} />
-                     </div>
-                  </div>
-
                   <button onClick={handleUpdateBranding} disabled={isSyncing} className="w-full py-6 bg-slate-900 text-white rounded-[2rem] text-[11px] font-black uppercase tracking-[0.4em] shadow-xl hover:bg-black transition-all disabled:opacity-50">
                     {isSyncing ? 'SYNCING BRANDING...' : 'COMMIT GLOBAL BRANDING'}
                   </button>
                </div>
             </div>
           </div>
+        </div>
+      )}
 
-          <div className="lg:col-span-4 space-y-10">
-            <div className="bg-slate-900 p-10 rounded-[3rem] text-white shadow-2xl relative overflow-hidden h-full">
-               <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
-               <h3 className="text-xl font-bold font-serif mb-10">Live Preview</h3>
-               
-               <div className="space-y-12">
-                  <div className="space-y-3">
-                    <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Brand Mark</p>
-                    <div className="w-20 h-20 bg-white/10 rounded-2xl flex items-center justify-center overflow-hidden border border-white/5">
-                       {siteLogo ? <img src={siteLogo} className="w-full h-full object-contain" alt="Logo" /> : <i className="fa-solid fa-mountain text-3xl opacity-20"></i>}
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Theme Atmosphere</p>
-                    <div className="p-6 rounded-2xl bg-white/5 border border-white/10 text-center">
-                       <i className={`fa-solid ${getThemeIcon(activeTheme)} text-4xl text-sky-400 mb-4`}></i>
-                       <p className="text-xs font-black uppercase tracking-widest">{activeTheme.replace('_', ' ')} MODE</p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Primary Palette</p>
-                    <div className="h-16 rounded-2xl w-full flex items-center justify-center text-[10px] font-black uppercase tracking-widest" style={{ backgroundColor: primaryColor }}>
-                       {primaryColor}
-                    </div>
-                  </div>
-
-                  <div className="pt-10 border-t border-white/5">
-                    <div className="flex items-center gap-4 p-4 rounded-xl bg-white/5">
-                       <i className="fa-brands fa-whatsapp text-emerald-400 text-xl"></i>
-                       <div>
-                          <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Direct Link</p>
-                          <p className="text-xs font-bold">{whatsappNumber}</p>
-                       </div>
-                    </div>
-                  </div>
-               </div>
-            </div>
+      {/* Modals & Overlays */}
+      {editingTestimonial && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xl animate-reveal" onClick={() => setEditingTestimonial(null)}>
+          <div className="bg-white rounded-[3rem] p-10 max-w-lg w-full shadow-2xl relative" onClick={e => e.stopPropagation()}>
+            <h2 className="text-2xl font-bold font-serif mb-8">{editingTestimonial.id ? 'Edit Story' : 'New Story'}</h2>
+            <form onSubmit={handleSaveTestimonial} className="space-y-6 text-left">
+              <input required placeholder="Guest Name" className="w-full px-5 py-4 bg-slate-50 rounded-2xl border-none text-sm font-bold" value={editingTestimonial.name} onChange={e => setEditingTestimonial({...editingTestimonial, name: e.target.value})} />
+              <textarea required rows={4} placeholder="Narrative" className="w-full px-5 py-4 bg-slate-50 rounded-2xl border-none text-sm font-medium resize-none" value={editingTestimonial.content} onChange={e => setEditingTestimonial({...editingTestimonial, content: e.target.value})} />
+              <button type="submit" disabled={isSyncing} className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl">
+                {isSyncing ? 'SYNCING...' : 'PUBLISH STORY'}
+              </button>
+            </form>
           </div>
         </div>
       )}
 
-      {/* Other Tabs Placeholder Logic remains the same as previously implemented */}
-      {activeTab === 'inventory' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 sm:gap-16">
-          <div className="lg:col-span-5 space-y-8 sm:space-y-12">
-            <div className="bg-white p-8 sm:p-12 rounded-3xl sm:rounded-[4rem] shadow-xl border border-slate-50 text-left">
-              <div className="flex justify-between items-center mb-8">
-                <h2 className="text-2xl font-bold font-serif text-slate-900">{isEditing ? 'Modify Asset' : 'New Listing'}</h2>
-                {isEditing && <button onClick={() => setIsEditing(false)} className="text-[10px] font-black uppercase text-red-500">Cancel</button>}
-              </div>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <input required placeholder="Villa Name" className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm font-bold outline-none" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
-                <input required placeholder="Location" className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm font-bold outline-none" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} />
-                <input type="number" required placeholder="Price/Night" className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm font-bold outline-none" value={formData.pricePerNight} onChange={e => setFormData({...formData, pricePerNight: Number(e.target.value)})} />
-                <button type="submit" disabled={isSyncing} className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest">{isEditing ? 'UPDATE' : 'PUBLISH'}</button>
-              </form>
-            </div>
-          </div>
-          <div className="lg:col-span-7">
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {filteredVillas.map(v => (
-                  <div key={v.id} className="bg-white p-6 rounded-[2.5rem] border border-slate-50 flex items-center gap-6 text-left group hover-lift">
-                    <img src={v.imageUrls[0]} className="w-16 h-16 rounded-xl object-cover shadow-sm" alt="" />
-                    <div className="flex-grow min-w-0">
-                       <h3 className="font-bold text-slate-900 truncate">{v.name}</h3>
-                       <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{v.location}</p>
-                    </div>
-                    <button onClick={() => handleEdit(v)} className="text-slate-300 hover:text-sky-600 p-2"><i className="fa-solid fa-pen-to-square"></i></button>
-                  </div>
-                ))}
-             </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Confirmation Modals (Villa Deletion) */}
       {villaToDelete && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xl animate-reveal" onClick={() => setVillaToDelete(null)}>
-          <div className="bg-white rounded-[4rem] p-16 max-w-md w-full shadow-2xl text-center" onClick={e => e.stopPropagation()}>
-             <h2 className="text-3xl font-bold font-serif mb-4 text-slate-900">Confirm Deletion?</h2>
-             <p className="text-slate-500 mb-12">Registry wipe is permanent.</p>
-             <button onClick={async () => { await onDeleteVilla(villaToDelete.id); setVillaToDelete(null); }} className="w-full py-6 bg-red-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest">DELETE</button>
+          <div className="bg-white rounded-[3rem] p-12 max-w-sm w-full shadow-2xl text-center" onClick={e => e.stopPropagation()}>
+             <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-8">
+               <i className="fa-solid fa-trash-can text-3xl"></i>
+             </div>
+             <h2 className="text-2xl font-bold font-serif mb-4 text-slate-900">Registry Wipe?</h2>
+             <p className="text-slate-500 text-sm mb-10 leading-relaxed">This action will permanently remove <b>{villaToDelete.name}</b> from the live catalog.</p>
+             <div className="grid grid-cols-2 gap-4">
+                <button onClick={() => setVillaToDelete(null)} className="py-4 rounded-xl text-[10px] font-black uppercase tracking-widest bg-slate-50 text-slate-400">Cancel</button>
+                <button onClick={async () => {
+                  setIsSyncing(true);
+                  setProgress({ active: true, message: 'Wiping Registry Entry...', percentage: 50, error: null });
+                  try {
+                    await onDeleteVilla(villaToDelete.id);
+                    setProgress({ active: true, message: 'Asset Removed Successfully', percentage: 100, error: null });
+                    setVillaToDelete(null);
+                    setTimeout(() => setProgress(p => ({...p, active: false})), 1500);
+                  } catch (err: any) {
+                    setProgress({ active: true, message: 'Wipe Failed', percentage: 0, error: err.message });
+                  } finally {
+                    setIsSyncing(false);
+                  }
+                }} className="py-4 rounded-xl text-[10px] font-black uppercase tracking-widest bg-red-500 text-white shadow-lg">Confirm</button>
+             </div>
           </div>
         </div>
       )}

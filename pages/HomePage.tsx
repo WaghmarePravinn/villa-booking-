@@ -76,8 +76,8 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
   return (
     <div className="bg-[#fcfdfe] overflow-visible pb-24">
       
-      {/* Immersive Hero Section */}
-      <section className="relative min-h-[70vh] sm:min-h-[85vh] flex flex-col items-center justify-center px-4 overflow-visible pt-16 sm:pt-24">
+      {/* Immersive Hero Section - Adjusted for immediate 'selector' visibility */}
+      <section className="relative min-h-[60vh] sm:min-h-[75vh] flex flex-col items-center justify-center px-4 overflow-visible pt-12 sm:pt-20">
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
           <div 
             className="w-full h-full transition-transform duration-1000 ease-out will-change-transform"
@@ -92,35 +92,35 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
           </div>
         </div>
 
-        <div className="relative z-10 text-center max-w-6xl mb-12 sm:mb-16 px-4 animate-fade">
-          <div className="inline-flex items-center gap-3 mb-6 px-5 py-2 bg-white/10 backdrop-blur-xl border border-white/20 rounded-full">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span className="text-white text-[8px] sm:text-[10px] font-black uppercase tracking-[0.4em]">Elite Sanctuary Collection</span>
+        <div className="relative z-10 text-center max-w-6xl mb-8 sm:mb-12 px-4 animate-fade">
+          <div className="inline-flex items-center gap-3 mb-4 px-4 py-1.5 bg-white/10 backdrop-blur-xl border border-white/20 rounded-full">
+            <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span className="text-white text-[7px] sm:text-[9px] font-black uppercase tracking-[0.4em]">Elite Sanctuary Collection</span>
           </div>
-          <h1 className="text-3xl sm:text-6xl md:text-8xl font-bold font-serif mb-6 text-white leading-[1.1] sm:leading-[0.9] tracking-tighter drop-shadow-2xl">
+          <h1 className="text-3xl sm:text-5xl md:text-7xl font-bold font-serif mb-4 text-white leading-[1.1] sm:leading-[0.9] tracking-tighter drop-shadow-2xl">
             Experience the Height of <br className="hidden sm:block" />
             <span className="text-sky-300 italic">Luxury & Comfort</span>.
           </h1>
-          <p className="text-white/70 text-[11px] sm:text-lg md:text-xl max-w-2xl mx-auto font-medium leading-relaxed drop-shadow-md">
+          <p className="text-white/70 text-[10px] sm:text-lg max-w-2xl mx-auto font-medium leading-relaxed drop-shadow-md">
             Hand-picked private retreats curated for the discerning traveler.
           </p>
         </div>
 
-        {/* PROMINENT SEARCH HUB - Always Visible */}
+        {/* PROMINENT SEARCH HUB - 'SELECTOR' HUB */}
         <div className="relative z-[100] w-full max-w-6xl px-4 animate-reveal [animation-delay:300ms]">
-          <div className="bg-white rounded-[2rem] sm:rounded-full premium-shadow border border-slate-50 p-2 sm:p-3 shadow-2xl">
+          <div className="bg-white rounded-[1.5rem] sm:rounded-full premium-shadow border border-slate-50 p-2 sm:p-3 shadow-2xl">
             <div className="flex flex-col lg:flex-row items-stretch lg:items-center">
               
               {/* DESTINATION */}
-              <div className="flex-1 px-6 sm:px-10 py-4 sm:py-6 relative group border-b lg:border-b-0 lg:border-r border-slate-100" ref={locationRef}>
-                <label className="block text-[8px] sm:text-[10px] font-black text-sky-600 uppercase tracking-widest mb-1.5 text-left">Destination</label>
-                <div className="flex items-center gap-4">
-                  <i className="fa-solid fa-location-dot text-sky-200 text-lg"></i>
+              <div className="flex-1 px-5 sm:px-8 py-3 sm:py-5 relative group border-b lg:border-b-0 lg:border-r border-slate-100" ref={locationRef}>
+                <label className="block text-[7px] sm:text-[9px] font-black text-sky-600 uppercase tracking-widest mb-1 text-left">Destination</label>
+                <div className="flex items-center gap-3">
+                  <i className="fa-solid fa-location-dot text-sky-200 text-base sm:text-lg"></i>
                   <input 
                     type="text" 
                     autoComplete="off"
                     placeholder="Where to?" 
-                    className="w-full bg-transparent outline-none text-base sm:text-xl font-black text-slate-700 placeholder:text-slate-200"
+                    className="w-full bg-transparent outline-none text-sm sm:text-lg font-black text-slate-700 placeholder:text-slate-200"
                     value={searchFilters.location} 
                     onFocus={() => setShowLocationSuggestions(true)}
                     onChange={(e) => setSearchFilters({...searchFilters, location: e.target.value})}
@@ -128,17 +128,17 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
                 </div>
                 
                 {showLocationSuggestions && (
-                  <div className="absolute top-[calc(100%+1rem)] left-0 right-0 lg:w-[400px] bg-white rounded-3xl shadow-2xl border border-slate-100 p-6 z-[200] animate-popup">
-                    <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-50">
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em]">Hotspots</p>
+                  <div className="absolute top-[calc(100%+0.5rem)] left-0 right-0 lg:w-[350px] bg-white rounded-2xl shadow-2xl border border-slate-100 p-5 z-[200] animate-popup">
+                    <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-50">
+                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.4em]">Hotspots</p>
                       <button onClick={() => setShowLocationSuggestions(false)} className="text-slate-300 hover:text-sky-600"><i className="fa-solid fa-xmark"></i></button>
                     </div>
-                    <div className="max-h-[250px] overflow-y-auto no-scrollbar space-y-1">
+                    <div className="max-h-[200px] overflow-y-auto no-scrollbar space-y-0.5">
                       {HOTSPOT_LOCATIONS.map((loc) => (
                         <button key={loc.name} onClick={() => { setSearchFilters({...searchFilters, location: loc.name}); setShowLocationSuggestions(false); }}
-                          className="w-full text-left px-4 py-3 rounded-xl hover:bg-sky-50 group flex items-center justify-between transition-all">
-                          <span className="text-sm font-black text-slate-600 group-hover:text-sky-600">{loc.name}</span>
-                          <span className="text-[8px] font-black text-slate-300 group-hover:text-sky-400">{loc.count} Stays</span>
+                          className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-sky-50 group flex items-center justify-between transition-all">
+                          <span className="text-xs font-black text-slate-600 group-hover:text-sky-600">{loc.name}</span>
+                          <span className="text-[7px] font-black text-slate-300 group-hover:text-sky-400">{loc.count} Stays</span>
                         </button>
                       ))}
                     </div>
@@ -147,17 +147,17 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
               </div>
 
               {/* DATES */}
-              <div className="flex-1 px-6 sm:px-10 py-4 sm:py-6 cursor-pointer text-left group hover:bg-slate-50 transition-colors border-b lg:border-b-0 lg:border-r border-slate-100"
+              <div className="flex-1 px-5 sm:px-8 py-3 sm:py-5 cursor-pointer text-left group hover:bg-slate-50 transition-colors border-b lg:border-b-0 lg:border-r border-slate-100"
                 onClick={() => setShowPicker(true)}>
-                <label className="block text-[8px] sm:text-[10px] font-black text-sky-600 uppercase tracking-widest mb-1.5">Stay Period</label>
-                <div className="flex items-center gap-5">
-                  <i className="fa-solid fa-calendar-day text-sky-200 text-lg"></i>
-                  <div className="flex items-center gap-3">
-                    <span className={`text-sm sm:text-xl font-black ${searchFilters.checkIn ? 'text-slate-800' : 'text-slate-200'}`}>
+                <label className="block text-[7px] sm:text-[9px] font-black text-sky-600 uppercase tracking-widest mb-1">Stay Period</label>
+                <div className="flex items-center gap-4">
+                  <i className="fa-solid fa-calendar-day text-sky-200 text-base sm:text-lg"></i>
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <span className={`text-xs sm:text-lg font-black ${searchFilters.checkIn ? 'text-slate-800' : 'text-slate-200'}`}>
                       {searchFilters.checkIn ? searchFilters.checkIn.split('-').reverse().slice(0, 2).join('/') : 'Arrival'}
                     </span>
-                    <div className="w-6 h-[1px] bg-slate-200"></div>
-                    <span className={`text-sm sm:text-xl font-black ${searchFilters.checkOut ? 'text-slate-800' : 'text-slate-200'}`}>
+                    <div className="w-4 h-[1px] bg-slate-200"></div>
+                    <span className={`text-xs sm:text-lg font-black ${searchFilters.checkOut ? 'text-slate-800' : 'text-slate-200'}`}>
                       {searchFilters.checkOut ? searchFilters.checkOut.split('-').reverse().slice(0, 2).join('/') : 'Departure'}
                     </span>
                   </div>
@@ -165,102 +165,65 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
               </div>
 
               {/* MORE FILTERS TOGGLE */}
-              <div className="flex-none px-6 py-4 lg:py-0 flex items-center justify-center">
+              <div className="flex-none px-5 py-3 lg:py-0 flex items-center justify-center">
                  <button 
                   onClick={() => setShowExtendedFilters(!showExtendedFilters)}
-                  className={`w-12 h-12 rounded-full border border-slate-100 transition-all flex items-center justify-center text-slate-400 hover:bg-sky-50 hover:text-sky-600 ${showExtendedFilters ? 'bg-sky-50 text-sky-600 ring-2 ring-sky-100' : ''}`}
-                  title="Advanced Filters"
+                  className={`w-10 h-10 rounded-full border border-slate-100 transition-all flex items-center justify-center text-slate-400 hover:bg-sky-50 hover:text-sky-600 ${showExtendedFilters ? 'bg-sky-50 text-sky-600 ring-2 ring-sky-100' : ''}`}
                  >
-                   <i className="fa-solid fa-sliders"></i>
+                   <i className="fa-solid fa-sliders text-xs"></i>
                  </button>
               </div>
 
               {/* SEARCH ACTION */}
-              <div className="p-2 w-full lg:w-auto">
+              <div className="p-1.5 w-full lg:w-auto">
                 <button 
                   onClick={handleSearch} 
-                  className="w-full lg:w-auto px-10 lg:px-14 py-5 lg:py-6 rounded-2xl lg:rounded-full font-black text-[11px] lg:text-[13px] uppercase tracking-[0.3em] flex items-center justify-center gap-4 bg-sky-600 text-white shadow-xl hover:bg-sky-700 transition-all active:scale-95 border-none"
+                  className="w-full lg:w-auto px-8 lg:px-12 py-4 lg:py-5 rounded-xl lg:rounded-full font-black text-[10px] lg:text-[12px] uppercase tracking-[0.3em] flex items-center justify-center gap-3 bg-sky-600 text-white shadow-xl hover:bg-sky-700 transition-all active:scale-95 border-none"
                 >
-                  DISCOVER <i className="fa-solid fa-magnifying-glass text-[10px]"></i>
+                  DISCOVER <i className="fa-solid fa-magnifying-glass text-[9px]"></i>
                 </button>
               </div>
             </div>
-
-            {/* EXTENDED FILTERS PANEL - visible on landing page when toggled */}
-            {showExtendedFilters && (
-              <div className="mt-4 p-6 sm:p-10 border-t border-slate-50 animate-reveal grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 text-left">
-                <div className="space-y-4">
-                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Price Range (₹)</label>
-                  <div className="flex items-center justify-between gap-4">
-                    <span className="text-xs font-bold text-slate-700">₹0</span>
-                    <input type="range" min="0" max="150000" step="5000" className="flex-grow accent-sky-600 h-1 bg-slate-100 rounded-full" 
-                      value={searchFilters.maxPrice} onChange={(e) => setSearchFilters({...searchFilters, maxPrice: Number(e.target.value)})} />
-                    <span className="text-xs font-black text-sky-600">₹{searchFilters.maxPrice.toLocaleString()}</span>
-                  </div>
-                </div>
-                
-                <div className="space-y-4">
-                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Bedrooms</label>
-                  <div className="flex gap-2">
-                    {[0, 1, 2, 3, 4, 5].map(n => (
-                      <button key={n} onClick={() => setSearchFilters({...searchFilters, bedrooms: n})}
-                        className={`w-10 h-10 rounded-xl text-[10px] font-black transition-all ${searchFilters.bedrooms === n ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}>
-                        {n === 0 ? 'Any' : n}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Guests</label>
-                  <div className="flex items-center gap-6 bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                    <button onClick={() => setSearchFilters(f => ({...f, guests: Math.max(1, (f.guests || 2) - 1)}))} className="w-8 h-8 rounded-full bg-white text-slate-900 shadow-sm border border-slate-100"><i className="fa-solid fa-minus"></i></button>
-                    <span className="text-sm font-black text-slate-900">{searchFilters.guests} People</span>
-                    <button onClick={() => setSearchFilters(f => ({...f, guests: Math.min(20, (f.guests || 2) + 1)}))} className="w-8 h-8 rounded-full bg-white text-slate-900 shadow-sm border border-slate-100"><i className="fa-solid fa-plus"></i></button>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </section>
 
-      {/* TRUST SYMBOLS - Visible below hero */}
-      <section className="max-w-7xl mx-auto px-4 py-16 sm:py-24">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      {/* TRUST SYMBOLS */}
+      <section className="max-w-7xl mx-auto px-4 py-12 sm:py-20">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-10">
           {[
             { l: "Verified Listings", d: "Strict luxury verification audit for every sanctuary.", i: "fa-certificate" },
             { l: "24/7 Concierge", d: "Round-the-clock support for your elite needs.", i: "fa-headset" },
             { l: "Secure Booking", d: "Encrypted transactions and total data privacy.", i: "fa-shield-halved" }
           ].map((trust, i) => (
-            <div key={i} className="bg-white p-8 sm:p-12 rounded-[2.5rem] border border-slate-50 hover-lift transition-all flex flex-col items-center text-center group">
-              <div className="w-16 h-16 bg-sky-50 rounded-3xl flex items-center justify-center text-2xl text-sky-600 group-hover:bg-sky-600 group-hover:text-white transition-all shadow-inner mb-8">
+            <div key={i} className="bg-white p-6 sm:p-10 rounded-[2rem] border border-slate-50 hover-lift transition-all flex flex-col items-center text-center group">
+              <div className="w-12 h-12 bg-sky-50 rounded-2xl flex items-center justify-center text-xl text-sky-600 group-hover:bg-sky-600 group-hover:text-white transition-all shadow-inner mb-6">
                  <i className={`fa-solid ${trust.i}`}></i>
               </div>
-              <h3 className="text-xl sm:text-2xl font-bold font-serif text-slate-900 mb-4">{trust.l}</h3>
-              <p className="text-xs sm:text-sm text-slate-500 font-medium leading-relaxed">{trust.d}</p>
+              <h3 className="text-lg sm:text-2xl font-bold font-serif text-slate-900 mb-3">{trust.l}</h3>
+              <p className="text-[10px] sm:text-sm text-slate-500 font-medium leading-relaxed">{trust.d}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* POPULAR STAYS - High quality media grid */}
+      {/* POPULAR STAYS */}
       <section id="destinations" className="max-w-7xl mx-auto px-4 pt-10 pb-20">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 sm:mb-20 gap-8 text-left">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 sm:mb-16 gap-6 text-left">
           <div className="max-w-2xl">
-            <div className="flex items-center gap-4 mb-4">
-               <div className="w-10 h-[2px] bg-sky-500"></div>
-               <span className="text-sky-600 font-black uppercase tracking-[0.6em] text-[9px] sm:text-[11px]">Signature Stays</span>
+            <div className="flex items-center gap-3 mb-3">
+               <div className="w-8 h-[2px] bg-sky-500"></div>
+               <span className="text-sky-600 font-black uppercase tracking-[0.6em] text-[8px] sm:text-[10px]">Signature Stays</span>
             </div>
-            <h2 className="text-4xl sm:text-7xl font-bold font-serif text-slate-900 leading-[1] tracking-tighter">Popular Stays</h2>
-            <p className="mt-6 text-slate-400 font-medium text-sm sm:text-lg">Discover handpicked architectural masterpieces for your next legacy stay.</p>
+            <h2 className="text-3xl sm:text-6xl font-bold font-serif text-slate-900 leading-[1] tracking-tighter">Popular Stays</h2>
+            <p className="mt-4 text-slate-400 font-medium text-xs sm:text-lg">Discover handpicked architectural masterpieces for your next legacy stay.</p>
           </div>
-          <button onClick={() => onExplore()} className="flex items-center gap-4 text-[10px] sm:text-[12px] font-black uppercase tracking-[0.4em] text-slate-900 border border-slate-200 px-10 py-5 rounded-xl sm:rounded-full bg-white shadow-sm hover:bg-slate-900 hover:text-white transition-all w-full sm:w-auto justify-center">
-            VIEW ALL CATALOG <i className="fa-solid fa-chevron-right text-[10px]"></i>
+          <button onClick={() => onExplore()} className="flex items-center gap-3 text-[9px] sm:text-[11px] font-black uppercase tracking-[0.4em] text-slate-900 border border-slate-200 px-8 py-4 rounded-xl sm:rounded-full bg-white shadow-sm hover:bg-slate-900 hover:text-white transition-all w-full sm:w-auto justify-center">
+            VIEW CATALOG <i className="fa-solid fa-chevron-right text-[9px]"></i>
           </button>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-14">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-12">
           {featuredVillas.map(v => (
             <VillaCard key={v.id} villa={v} whatsappNumber={settings.whatsappNumber} onViewDetails={onViewDetails} />
           ))}
@@ -272,7 +235,7 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
         <div className="fixed inset-0 z-[3000] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xl animate-fade" onClick={() => setShowPicker(false)}>
           <div 
             onClick={e => e.stopPropagation()} 
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl z-[3001] flex items-center justify-center"
+            className="w-full max-w-4xl flex items-center justify-center"
           >
             <DateRangePicker 
               startDate={searchFilters.checkIn || ''} 
