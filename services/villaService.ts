@@ -70,6 +70,12 @@ const parsePostgresArray = (input: any): string[] => {
 };
 
 const mapFromDb = (v: any): Villa => {
+  // Enhanced fallback logic for images: favor the array, but check if it's truly populated
+  const arrayImages = parsePostgresArray(v.image_urls);
+  const imageUrls = arrayImages.length > 0 
+    ? arrayImages 
+    : (v.image_url ? [v.image_url] : []);
+
   return {
     id: v.id,
     name: v.name || "Unnamed Property",
@@ -81,17 +87,17 @@ const mapFromDb = (v: any): Villa => {
     numRooms: Number(v.num_rooms ?? v.bedrooms ?? 0),
     description: v.description || "",
     longDescription: v.long_description || "",
-    imageUrls: parsePostgresArray(v.image_urls || [v.image_url]),
+    imageUrls: imageUrls,
     videoUrls: parsePostgresArray(v.video_urls),
     amenities: parsePostgresArray(v.amenities),
     includedServices: parsePostgresArray(v.included_services),
     isFeatured: Boolean(v.is_featured),
     rating: Number(v.rating ?? 5),
-    rating_count: Number(v.rating_count ?? 0), // Adjusted to match schema key
+    ratingCount: Number(v.rating_count ?? 0), // Corrected: Use ratingCount camelCase to match interface
     mealsAvailable: Boolean(v.meals_available ?? true),
     petFriendly: Boolean(v.pet_friendly ?? true),
     refundPolicy: v.refund_policy || ""
-  } as any; // Cast as any to handle exact key matching for UI
+  };
 };
 
 const mapToDb = (v: Partial<Villa>) => {
@@ -108,7 +114,7 @@ const mapToDb = (v: Partial<Villa>) => {
   if (v.imageUrls !== undefined) {
     const cleanUrls = v.imageUrls.filter(url => url && (url.includes('://') || url.startsWith('//') || url.startsWith('data:')));
     payload.image_urls = cleanUrls;
-    payload.image_url = cleanUrls.length > 0 ? cleanUrls[0] : null; // Sync both columns
+    payload.image_url = cleanUrls.length > 0 ? cleanUrls[0] : null; // Sync both columns for maximum compatibility
   }
   
   if (v.videoUrls !== undefined) {

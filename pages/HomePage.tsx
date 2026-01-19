@@ -197,13 +197,13 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
 
       {/* FIXED VIEWPORT DATE PICKER OVERLAY */}
       {showPicker && (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xl animate-fade overflow-y-auto" onClick={() => setShowPicker(false)}>
-           <div className="relative animate-scale py-12" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[1000] flex flex-col items-center justify-center p-4 bg-slate-900/60 backdrop-blur-3xl animate-fade" onClick={() => setShowPicker(false)}>
+           <div className="relative animate-scale flex flex-col items-center max-w-full" onClick={e => e.stopPropagation()}>
               <button 
                 onClick={() => setShowPicker(false)}
-                className="absolute top-4 right-0 w-12 h-12 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center text-white hover:bg-white hover:text-slate-900 transition-all z-20"
+                className="mb-8 w-14 h-14 rounded-full bg-slate-700/50 backdrop-blur-xl border border-white/20 flex items-center justify-center text-white hover:bg-white hover:text-slate-900 transition-all z-20 shadow-2xl"
               >
-                <i className="fa-solid fa-xmark"></i>
+                <i className="fa-solid fa-xmark text-lg"></i>
               </button>
               <DateRangePicker 
                 startDate={searchFilters.checkIn || ''} 

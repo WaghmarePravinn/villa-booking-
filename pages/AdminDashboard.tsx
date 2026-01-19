@@ -104,7 +104,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
         setVillaForm(prev => ({
           ...prev,
           ...result,
-          // Ensure arrays are handled correctly
           amenities: Array.isArray(result.amenities) ? result.amenities : [],
           includedServices: Array.isArray(result.includedServices) ? result.includedServices : []
         }));
@@ -184,8 +183,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
     }
   };
 
-  // OMITTED: Standard Service, Review, and Branding handlers for space, assuming they work as previously implemented
-
   const handleSubmitService = async (e: React.FormEvent) => {
     e.preventDefault();
     triggerSyncFeedback('Updating Service Registry...');
@@ -224,6 +221,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
       await updateLeadStatus(id, status);
       triggerSyncFeedback('Inquiry Synchronized', true);
     } catch (err: any) { triggerSyncFeedback('Sync Failed', false, err.message); }
+  };
+
+  const clearAllDeletions = () => {
+    setVillaToDelete(null);
+    setLeadToDelete(null);
+    setServiceToDelete(null);
+    setTestimonialToDelete(null);
   };
 
   return (
@@ -294,8 +298,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                       <p className="text-xs font-bold text-slate-900 truncate">{v.name}</p>
                       <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{v.location}</p>
                     </div>
-                    <button onClick={(e) => { e.stopPropagation(); setVillaToDelete(v); }} className="w-8 h-8 rounded-lg bg-red-50 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-red-500 hover:text-white">
-                      <i className="fa-solid fa-trash text-[10px]"></i>
+                    <button onClick={(e) => { e.stopPropagation(); setVillaToDelete(v); }} className="w-10 h-10 rounded-xl bg-red-50 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-red-500 hover:text-white">
+                      <i className="fa-solid fa-trash-can text-xs"></i>
                     </button>
                   </div>
                 ))}
@@ -311,7 +315,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
 
           {/* MAIN FORM */}
           <div className="lg:col-span-8">
-             {/* MAGIC AI PROMPT BAR */}
              {!isEditingVilla && (
                <div className="mb-10 bg-slate-900 p-2 rounded-[2.5rem] flex items-center shadow-2xl animate-popup">
                  <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-sky-400 to-indigo-500 flex items-center justify-center text-white shrink-0 ml-1">
@@ -378,7 +381,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                             <input type="number" className="w-full px-5 py-5 bg-slate-50 rounded-2xl border-none font-black text-slate-800" value={villaForm.bathrooms} onChange={e => setVillaForm({...villaForm, bathrooms: Number(e.target.value)})} />
                          </div>
                          <div className="space-y-2">
-                            <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-1">Guest Capacity</label>
+                            <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-1">Capacity</label>
                             <input type="number" className="w-full px-5 py-5 bg-slate-50 rounded-2xl border-none font-black text-slate-800" value={villaForm.capacity} onChange={e => setVillaForm({...villaForm, capacity: Number(e.target.value)})} />
                          </div>
                       </div>
@@ -407,11 +410,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
 
                       <div className="space-y-6">
                         <div className="space-y-2">
-                           <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Short Narrative (Impressive Teaser)</label>
-                           <input maxLength={150} placeholder="A minimal 2BHK jewel in the heart of..." className="w-full px-6 py-5 bg-slate-50 rounded-2xl border-none font-bold text-slate-800" value={villaForm.description} onChange={e => setVillaForm({...villaForm, description: e.target.value})} />
+                           <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Short Narrative</label>
+                           <input maxLength={150} placeholder="A minimal 2BHK jewel..." className="w-full px-6 py-5 bg-slate-50 rounded-2xl border-none font-bold text-slate-800" value={villaForm.description} onChange={e => setVillaForm({...villaForm, description: e.target.value})} />
                         </div>
                         <div className="space-y-2">
-                           <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Full Architectural Narrative</label>
+                           <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Detailed Architectural Narrative</label>
                            <textarea placeholder="Tell the story of this property..." className="w-full px-6 py-5 bg-slate-50 rounded-3xl border-none font-medium text-slate-700 h-56 leading-relaxed" value={villaForm.longDescription} onChange={e => setVillaForm({...villaForm, longDescription: e.target.value})} />
                         </div>
                       </div>
@@ -424,7 +427,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                         onClick={() => { setIsEditingVilla(false); setVillaForm(initialVilla); }} 
                         className="px-12 py-6 bg-slate-100 text-slate-400 rounded-3xl font-black uppercase text-[11px] tracking-widest hover:bg-red-50 hover:text-red-500 transition-all"
                        >
-                         Discard Changes
+                         Discard
                        </button>
                      )}
                      <button 
@@ -432,7 +435,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                         disabled={isSyncing || isUploading || isGeneratingAI} 
                         className="flex-grow py-6 bg-slate-900 text-white rounded-3xl font-black uppercase text-[12px] tracking-[0.4em] shadow-2xl hover:bg-sky-600 transition-all active:scale-95 disabled:opacity-50"
                      >
-                        {isSyncing ? 'SYNCHRONIZING...' : (isEditingVilla ? 'SYNC UPDATED REGISTRY' : 'PUBLISH TO GLOBAL REGISTRY')}
+                        {isSyncing ? 'SYNCHRONIZING...' : (isEditingVilla ? 'SAVE UPDATES' : 'PUBLISH SANCTUARY')}
                      </button>
                    </div>
                 </form>
@@ -441,7 +444,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
         </div>
       )}
 
-      {/* REMAINDER OF TABS (Inquiries, Services, Reviews, Branding) OMITTED BUT ASSUMED FUNCTIONAL AS PER ORIGINAL FILE */}
       {activeTab === 'inquiries' && (
         <div className="space-y-6 animate-fade">
           <h2 className="text-3xl font-bold font-serif text-slate-900 mb-10">Guest Inquiries</h2>
@@ -503,7 +505,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 animate-fade">
           <div className="lg:col-span-5">
              <div className="bg-white p-12 rounded-[3rem] shadow-xl border border-slate-50">
-                <h2 className="text-2xl font-bold font-serif mb-8 text-slate-900">{editingReviewId ? 'Modify Chronicle' : 'Add Chronicle'}</h2>
+                <h2 className="text-2xl font-bold font-serif mb-8 text-slate-900">{editingReviewId ? 'Modify Review' : 'Add Review'}</h2>
                 <form onSubmit={handleSubmitReview} className="space-y-6">
                    <input required className="w-full px-6 py-4 bg-slate-50 rounded-2xl border-none font-bold" value={reviewForm.name} placeholder="Guest Name" onChange={e => setReviewForm({...reviewForm, name: e.target.value})} />
                    <select className="w-full px-6 py-4 bg-slate-50 rounded-2xl border-none font-bold" value={reviewForm.category} onChange={e => setReviewForm({...reviewForm, category: e.target.value as any})}>
@@ -512,9 +514,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                       <option value="Booking">Booking</option>
                       <option value="Service">Staff</option>
                    </select>
-                   <textarea required className="w-full px-6 py-4 bg-slate-50 rounded-2xl border-none font-medium h-32" value={reviewForm.content} placeholder="Experience Narrative" onChange={e => setReviewForm({...reviewForm, content: e.target.value})} />
+                   <textarea required className="w-full px-6 py-4 bg-slate-50 rounded-2xl border-none font-medium h-32" value={reviewForm.content} placeholder="Review Content" onChange={e => setReviewForm({...reviewForm, content: e.target.value})} />
                    <button type="submit" className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl">
-                      {editingReviewId ? 'Update Chronicle' : 'Publish Chronicle'}
+                      {editingReviewId ? 'Update Review' : 'Publish Review'}
                    </button>
                 </form>
              </div>
@@ -547,11 +549,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
           <div className="bg-white p-12 sm:p-20 rounded-[4rem] shadow-xl border border-slate-50">
              <div className="flex justify-between items-center mb-12 border-b border-slate-50 pb-8">
                 <div>
-                   <h2 className="text-3xl font-bold font-serif text-slate-900 mb-1">Site Intelligence</h2>
-                   <p className="text-slate-400 text-xs font-medium uppercase tracking-widest">Global Identity Parameters</p>
+                   <h2 className="text-3xl font-bold font-serif text-slate-900 mb-1">Branding Identity</h2>
+                   <p className="text-slate-400 text-xs font-medium uppercase tracking-widest">Global Site Parameters</p>
                 </div>
                 <button onClick={handleSaveBranding} className="px-10 py-5 bg-slate-900 text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-2xl hover:bg-sky-600 transition-all active:scale-95">
-                   Sync Site Intelligence
+                   Apply Changes
                 </button>
              </div>
 
@@ -580,7 +582,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                          </select>
                       </div>
                       <div className="space-y-2">
-                         <label className="text-[9px] font-black uppercase tracking-widest text-slate-300">Primary Color Hex</label>
+                         <label className="text-[9px] font-black uppercase tracking-widest text-slate-300">Primary Color</label>
                          <div className="flex gap-4">
                             <input className="flex-grow px-6 py-4 bg-slate-50 rounded-2xl border-none font-bold" value={brandingData.primaryColor} onChange={e => setBrandingData({...brandingData, primaryColor: e.target.value})} />
                             <div className="w-14 h-14 rounded-2xl shadow-inner border border-white" style={{ backgroundColor: brandingData.primaryColor }}></div>
@@ -588,44 +590,68 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                       </div>
                    </div>
                 </div>
-
-                <div className="md:col-span-2 space-y-6">
-                   <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-l-2 border-emerald-500 pl-4">Messaging</h3>
-                   <div className="space-y-2">
-                      <label className="text-[9px] font-black uppercase tracking-widest text-slate-300">Global Marquee Promo Text</label>
-                      <textarea className="w-full px-6 py-4 bg-slate-50 rounded-2xl border-none font-bold h-20" value={brandingData.promoText} onChange={e => setBrandingData({...brandingData, promoText: e.target.value})} />
-                   </div>
-                </div>
              </div>
           </div>
         </div>
       )}
 
-      {/* CONFIRMATION OVERLAYS */}
-      {(villaToDelete || leadToDelete || serviceToDelete || testimonialToDelete) && (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xl animate-fade" onClick={() => { setVillaToDelete(null); setLeadToDelete(null); setServiceToDelete(null); setTestimonialToDelete(null); }}>
-          <div className="bg-white rounded-[3rem] p-12 max-w-sm w-full shadow-2xl text-center" onClick={e => e.stopPropagation()}>
-             <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-8"><i className="fa-solid fa-triangle-exclamation text-3xl"></i></div>
-             <h2 className="text-2xl font-bold font-serif mb-4 text-slate-900">Confirm Deletion?</h2>
-             <p className="text-slate-500 text-[11px] mb-10 leading-relaxed font-medium uppercase tracking-widest">Permanent Cloud Removal Sequence</p>
-             <div className="grid grid-cols-2 gap-4">
-                <button onClick={() => { setVillaToDelete(null); setLeadToDelete(null); setServiceToDelete(null); setTestimonialToDelete(null); }} className="py-4 rounded-xl text-[10px] font-black uppercase tracking-widest bg-slate-50 text-slate-400">Cancel</button>
+      {/* CONFIRMATION OVERLAY FOR VILLA DELETION */}
+      {villaToDelete && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-3xl animate-fade" onClick={clearAllDeletions}>
+          <div className="bg-white rounded-[3rem] p-12 max-w-md w-full shadow-[0_40px_100px_rgba(0,0,0,0.5)] text-center animate-scale border border-slate-100" onClick={e => e.stopPropagation()}>
+             <div className="w-24 h-24 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-10 shadow-inner border border-red-100">
+               <i className="fa-solid fa-triangle-exclamation text-4xl animate-pulse"></i>
+             </div>
+             <h2 className="text-3xl font-bold font-serif mb-4 text-slate-900 leading-tight">Permanent Removal?</h2>
+             <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-2 opacity-50">This action cannot be undone</p>
+             <div className="bg-slate-50 p-6 rounded-[2rem] mb-12 border border-slate-100">
+                <p className="text-[10px] font-black uppercase text-slate-400 mb-1 tracking-widest">Selected Property</p>
+                <p className="text-xl font-bold text-slate-900 font-serif">{villaToDelete.name}</p>
+             </div>
+             <div className="grid grid-cols-2 gap-6">
+                <button onClick={clearAllDeletions} className="py-5 rounded-2xl text-[11px] font-black uppercase tracking-widest bg-slate-100 text-slate-400 hover:bg-slate-200 transition-all">Cancel</button>
                 <button onClick={async () => {
                   setIsSyncing(true);
                   triggerSyncFeedback('Executing Purge Sequence...');
                   try {
-                    if (villaToDelete) await onDeleteVilla(villaToDelete.id);
-                    if (leadToDelete) await deleteLead(leadToDelete.id);
-                    if (serviceToDelete) await deleteService(serviceToDelete.id);
-                    if (testimonialToDelete) await deleteTestimonial(testimonialToDelete.id);
-                    setVillaToDelete(null); setLeadToDelete(null); setServiceToDelete(null); setTestimonialToDelete(null);
-                    triggerSyncFeedback('Purge Sequence Successful', true);
+                    await onDeleteVilla(villaToDelete.id);
+                    clearAllDeletions();
+                    triggerSyncFeedback('Sanctuary Purged Successfully', true);
                   } catch (err: any) {
                     triggerSyncFeedback('Purge Failed', false, err.message);
                   } finally {
                     setIsSyncing(false);
                   }
-                }} className="py-4 rounded-xl text-[10px] font-black uppercase tracking-widest bg-red-500 text-white shadow-xl">Confirm Purge</button>
+                }} className="py-5 rounded-2xl text-[11px] font-black uppercase tracking-widest bg-red-500 text-white shadow-2xl shadow-red-500/20 hover:bg-red-600 transition-all active:scale-95">Delete Permanently</button>
+             </div>
+          </div>
+        </div>
+      )}
+
+      {/* OTHER DELETION OVERLAYS */}
+      {(leadToDelete || serviceToDelete || testimonialToDelete) && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xl animate-fade" onClick={clearAllDeletions}>
+          <div className="bg-white rounded-[3rem] p-12 max-w-sm w-full shadow-2xl text-center animate-scale" onClick={e => e.stopPropagation()}>
+             <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-8"><i className="fa-solid fa-trash-can text-3xl"></i></div>
+             <h2 className="text-2xl font-bold font-serif mb-4 text-slate-900">Remove Entry?</h2>
+             <p className="text-slate-500 text-[11px] mb-10 leading-relaxed font-medium uppercase tracking-widest">Permanent Registry Deletion</p>
+             <div className="grid grid-cols-2 gap-4">
+                <button onClick={clearAllDeletions} className="py-4 rounded-xl text-[10px] font-black uppercase tracking-widest bg-slate-50 text-slate-400">Cancel</button>
+                <button onClick={async () => {
+                  setIsSyncing(true);
+                  triggerSyncFeedback('Executing Removal...');
+                  try {
+                    if (leadToDelete) await deleteLead(leadToDelete.id);
+                    if (serviceToDelete) await deleteService(serviceToDelete.id);
+                    if (testimonialToDelete) await deleteTestimonial(testimonialToDelete.id);
+                    clearAllDeletions();
+                    triggerSyncFeedback('Entry Removed Successfully', true);
+                  } catch (err: any) {
+                    triggerSyncFeedback('Removal Failed', false, err.message);
+                  } finally {
+                    setIsSyncing(false);
+                  }
+                }} className="py-4 rounded-xl text-[10px] font-black uppercase tracking-widest bg-red-500 text-white shadow-xl">Confirm Delete</button>
              </div>
           </div>
         </div>

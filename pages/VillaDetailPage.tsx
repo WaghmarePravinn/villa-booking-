@@ -27,6 +27,15 @@ const VillaDetailPage: React.FC<VillaDetailPageProps> = ({ villa, settings, user
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Ensure the active image updates if the villa data changes (e.g. after an admin edit)
+  useEffect(() => {
+    if (villa.imageUrls && villa.imageUrls.length > 0) {
+      if (!activeImage || !villa.imageUrls.includes(activeImage)) {
+        setActiveImage(villa.imageUrls[0]);
+      }
+    }
+  }, [villa.id, villa.imageUrls]);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
