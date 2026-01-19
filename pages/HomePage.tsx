@@ -32,13 +32,18 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
   }, []);
 
   useEffect(() => {
-    // Lock scroll when picker is active
+    // Lock scroll when picker is active to ensure the overlay stays perfectly centered
     if (showPicker) {
       document.body.style.overflow = 'hidden';
+      document.body.style.paddingRight = 'var(--scrollbar-width, 0px)'; // Optional: prevent layout shift
     } else {
       document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
     }
-    return () => { document.body.style.overflow = ''; };
+    return () => { 
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+    };
   }, [showPicker]);
 
   useEffect(() => {
@@ -204,16 +209,24 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
         </div>
       </section>
 
-      {/* VIEWPORT-CENTRIC DATE PICKER OVERLAY */}
+      {/* FLOATING DATE PICKER OVERLAY - Centered in viewport */}
       {showPicker && (
-        <div className="fixed inset-0 z-[1000] flex flex-col items-center justify-center p-4 sm:p-8 bg-slate-900/60 backdrop-blur-3xl animate-fade overflow-hidden" onClick={() => setShowPicker(false)}>
-           <div className="relative animate-scale flex flex-col items-center max-w-full w-fit h-fit" onClick={e => e.stopPropagation()}>
+        <div 
+          className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-2xl animate-fade"
+          onClick={() => setShowPicker(false)}
+        >
+           <div 
+             className="relative animate-scale flex flex-col items-center max-w-full w-full sm:w-auto h-auto" 
+             onClick={e => e.stopPropagation()}
+           >
+              {/* Reachable Close Button positioned on the component itself */}
               <button 
                 onClick={() => setShowPicker(false)}
-                className="absolute -top-16 right-0 sm:-right-16 w-12 h-12 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center text-white hover:bg-white hover:text-slate-900 transition-all z-[1010] shadow-2xl"
+                className="absolute -top-3 -right-3 sm:-top-5 sm:-right-5 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-900 text-white flex items-center justify-center hover:bg-sky-600 transition-all z-[1010] shadow-2xl active:scale-90"
               >
-                <i className="fa-solid fa-xmark text-lg"></i>
+                <i className="fa-solid fa-xmark text-sm sm:text-lg"></i>
               </button>
+
               <DateRangePicker 
                 startDate={searchFilters.checkIn || ''} 
                 endDate={searchFilters.checkOut || ''} 
