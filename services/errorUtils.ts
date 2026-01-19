@@ -23,12 +23,13 @@ CREATE POLICY "Public Update" ON storage.objects FOR UPDATE USING (bucket_id = '
 CREATE POLICY "Public Delete" ON storage.objects FOR DELETE USING (bucket_id = 'villa-media');`);
   }
 
-  if (msg.includes("relation") || msg.includes("policy") || msg.includes("access denied") || msg.includes("column") || msg.includes("no rows")) {
+  if (msg.includes("relation") || msg.includes("policy") || msg.includes("access denied") || msg.includes("column") || msg.includes("no rows") || msg.includes("site_settings")) {
     return new Error(`[SUPABASE SCHEMA FIX REQUIRED]
     
-Your database schema is out of sync. Please run this script in your Supabase SQL Editor:
+Your database schema is out of sync or the "${tableName}" table is missing. 
+Please run this script in your Supabase SQL Editor:
 
--- 1. Correct Villas Table Definition
+-- 1. Core Tables Definition
 CREATE TABLE IF NOT EXISTS public.villas (
   id uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   name text NOT NULL,
@@ -55,12 +56,26 @@ CREATE TABLE IF NOT EXISTS public.villas (
   created_at timestamp with time zone NULL DEFAULT now()
 );
 
--- 2. Other Core Tables
 CREATE TABLE IF NOT EXISTS profiles (id uuid DEFAULT gen_random_uuid() PRIMARY KEY, username text UNIQUE, password text, email text, role text DEFAULT 'USER', created_at timestamptz DEFAULT now());
 CREATE TABLE IF NOT EXISTS testimonials (id uuid DEFAULT gen_random_uuid() PRIMARY KEY, name text, content text, avatar text, category text DEFAULT 'Trip', rating int DEFAULT 5, created_at timestamptz DEFAULT now());
 CREATE TABLE IF NOT EXISTS services (id uuid DEFAULT gen_random_uuid() PRIMARY KEY, title text, description text, icon text DEFAULT 'fa-concierge-bell', created_at timestamptz DEFAULT now());
 CREATE TABLE IF NOT EXISTS leads (id uuid DEFAULT gen_random_uuid() PRIMARY KEY, villa_id uuid, villa_name text, customer_name text, user_id uuid, source text DEFAULT 'Direct Inquiry', status text DEFAULT 'new', check_in date, check_out date, created_at timestamptz DEFAULT now());
-CREATE TABLE IF NOT EXISTS site_settings (id int PRIMARY KEY, active_theme text DEFAULT 'DEFAULT', promo_text text, whatsapp_number text, contact_email text, contact_phone text, site_logo text, primary_color text, offer_popup jsonb);
+
+-- 2. Correct site_settings Table
+CREATE TABLE IF NOT EXISTS site_settings (
+  id int PRIMARY KEY, 
+  active_theme text DEFAULT 'DEFAULT', 
+  promo_text text, 
+  whatsapp_number text, 
+  contact_email text, 
+  contact_phone text, 
+  site_logo text, 
+  primary_color text, 
+  offer_popup jsonb
+);
+
+-- Seed site_settings if empty
+INSERT INTO site_settings (id, promo_text) VALUES (1, 'WELCOME TO PEAK STAY') ON CONFLICT DO NOTHING;
 
 -- 3. Enable RLS and Open Access (Development)
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
@@ -70,13 +85,13 @@ ALTER TABLE services ENABLE ROW LEVEL SECURITY;
 ALTER TABLE leads ENABLE ROW LEVEL SECURITY;
 ALTER TABLE site_settings ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS "public_access" ON profiles; CREATE POLICY "public_access" ON profiles FOR ALL USING (true) WITH CHECK (true);
-DROP POLICY IF EXISTS "public_access" ON villas; CREATE POLICY "public_access" ON villas FOR ALL USING (true) WITH CHECK (true);
-DROP POLICY IF EXISTS "public_access" ON testimonials; CREATE POLICY "public_access" ON testimonials FOR ALL USING (true) WITH CHECK (true);
-DROP POLICY IF EXISTS "public_access" ON services; CREATE POLICY "public_access" ON services FOR ALL USING (true) WITH CHECK (true);
-DROP POLICY IF EXISTS "public_access" ON leads; CREATE POLICY "public_access" ON leads FOR ALL USING (true) WITH CHECK (true);
-DROP POLICY IF EXISTS "public_access" ON site_settings; CREATE POLICY "public_access" ON site_settings FOR ALL USING (true) WITH CHECK (true);`);
+CREATE POLICY "public_access" ON profiles FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "public_access" ON villas FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "public_access" ON testimonials FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "public_access" ON services FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "public_access" ON leads FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "public_access" ON site_settings FOR ALL USING (true) WITH CHECK (true);`);
   }
 
-  return new Error(error.message || "A database error occurred. Check browser console.");
+  return new Error(error.message || `A database error occurred in ${tableName}.`);
 };

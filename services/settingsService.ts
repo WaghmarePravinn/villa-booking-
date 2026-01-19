@@ -1,6 +1,7 @@
 
 import { supabase, isSupabaseAvailable } from "./supabase";
 import { AppTheme, SiteSettings, OfferPopup } from "../types";
+import { handleDbError } from "./errorUtils";
 
 const TABLE = "site_settings";
 const LOCAL_STORAGE_KEY = "peak_stay_settings_sandbox";
@@ -65,6 +66,7 @@ export const subscribeToSettings = (callback: (settings: SiteSettings) => void) 
           offerPopup: data.offer_popup ? (typeof data.offer_popup === 'string' ? JSON.parse(data.offer_popup) : data.offer_popup) : DEFAULT_SETTINGS.offerPopup
         });
       } else {
+        // If row 1 doesn't exist, we fallback to default
         callback(DEFAULT_SETTINGS);
       }
     } catch (e) {
@@ -96,14 +98,18 @@ export const updateSettings = async (settings: Partial<SiteSettings>) => {
   if (settings.contactPhone) payload.contact_phone = settings.contactPhone;
   if (settings.siteLogo !== undefined) payload.site_logo = settings.siteLogo;
   if (settings.primaryColor !== undefined) payload.primary_color = settings.primaryColor;
-  if (settings.offerPopup !== undefined) payload.offer_popup = JSON.stringify(settings.offerPopup);
+  
+  // For jsonb columns, Supabase expects the JS object directly, not a stringified version.
+  if (settings.offerPopup !== undefined) {
+    payload.offer_popup = settings.offerPopup;
+  }
 
   const { error } = await supabase
     .from(TABLE)
     .upsert(payload, { onConflict: 'id' });
     
   if (error) {
-    console.error("Supabase Settings Sync Failed:", error);
-    throw error;
+    console.error("Supabase Settings Sync Failed:", error.message || error);
+    throw handleDbError(error, TABLE);
   }
 };
