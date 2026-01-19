@@ -111,58 +111,58 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, endDate, o
 
   const formatDateLabel = (dateStr: string) => {
     if (!dateStr) return '--/--';
-    const [y, m, d] = dateStr.split('-');
-    return `${d}/${m}`;
+    const parts = dateStr.split('-');
+    return `${parts[2]}/${parts[1]}`;
   };
 
   return (
     <div 
-      className="bg-white rounded-[2.5rem] shadow-[0_30px_100px_rgba(0,0,0,0.3)] border border-slate-100 p-8 sm:p-12 w-full max-w-[90vw] md:max-w-4xl animate-scale overflow-hidden"
+      className="bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl border border-slate-100 p-6 sm:p-10 w-full max-w-[95vw] md:max-w-4xl animate-scale overflow-hidden flex flex-col"
       onClick={(e) => e.stopPropagation()}
     >
       {/* Header */}
-      <div className="flex justify-between items-start mb-8 sm:mb-12">
+      <div className="flex justify-between items-center mb-6 sm:mb-8">
         <div className="text-left">
-          <p className="text-[10px] font-black text-[#0088cc] uppercase tracking-widest leading-none mb-2">Stay Schedule</p>
-          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 font-serif leading-none">Choose Dates</h2>
+          <p className="text-[9px] font-black text-[#0088cc] uppercase tracking-[0.3em] mb-1">Stay Schedule</p>
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 font-serif">Select Dates</h2>
         </div>
         <button 
           onClick={(e) => { e.stopPropagation(); onChange('', ''); }}
-          className="text-[11px] font-black text-slate-300 uppercase tracking-widest hover:text-red-500 transition-all pt-1"
+          className="text-[10px] font-black text-slate-300 uppercase tracking-widest hover:text-red-500 transition-all"
         >
           RESET
         </button>
       </div>
 
       {/* Calendar Area */}
-      <div className="flex flex-col md:flex-row gap-10 md:gap-20">
+      <div className="flex flex-col md:flex-row gap-6 md:gap-12 lg:gap-16">
         {months.map((m, mIdx) => (
           <div key={`${m.name}-${mIdx}`} className={`flex-1 ${mIdx === 1 ? 'hidden md:block' : ''}`}>
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center justify-between mb-6">
               {mIdx === 0 ? (
-                <button onClick={handlePrevMonth} className="w-10 h-10 flex items-center justify-center hover:bg-slate-50 rounded-full transition-all text-slate-300 hover:text-slate-900">
-                  <i className="fa-solid fa-chevron-left"></i>
+                <button onClick={handlePrevMonth} className="w-8 h-8 flex items-center justify-center hover:bg-slate-50 rounded-full transition-all text-slate-300 hover:text-slate-900 border border-slate-100 sm:border-none">
+                  <i className="fa-solid fa-chevron-left text-xs"></i>
                 </button>
-              ) : <div className="w-10" />}
+              ) : <div className="w-8" />}
               
-              <h3 className="font-bold text-slate-800 font-serif text-xl">
+              <h3 className="font-bold text-slate-800 font-serif text-lg">
                 {m.name} {m.year}
               </h3>
 
               {mIdx === 1 ? (
-                <button onClick={handleNextMonth} className="w-10 h-10 flex items-center justify-center hover:bg-slate-50 rounded-full transition-all text-slate-300 hover:text-slate-900">
-                  <i className="fa-solid fa-chevron-right"></i>
+                <button onClick={handleNextMonth} className="w-8 h-8 flex items-center justify-center hover:bg-slate-50 rounded-full transition-all text-slate-300 hover:text-slate-900 border border-slate-100 sm:border-none">
+                  <i className="fa-solid fa-chevron-right text-xs"></i>
                 </button>
               ) : (
-                <button onClick={handleNextMonth} className="md:hidden w-10 h-10 flex items-center justify-center hover:bg-slate-50 rounded-full transition-all text-slate-300 hover:text-slate-900">
-                  <i className="fa-solid fa-chevron-right"></i>
+                <button onClick={handleNextMonth} className="md:hidden w-8 h-8 flex items-center justify-center hover:bg-slate-50 rounded-full transition-all text-slate-300 hover:text-slate-900 border border-slate-100">
+                  <i className="fa-solid fa-chevron-right text-xs"></i>
                 </button>
               )}
             </div>
 
-            <div className="grid grid-cols-7 gap-y-1 mb-4">
+            <div className="grid grid-cols-7 gap-y-1 mb-2">
               {daysOfWeek.map(d => (
-                <div key={d} className="text-center text-[10px] font-black text-slate-200 uppercase mb-4 tracking-widest">{d}</div>
+                <div key={d} className="text-center text-[9px] font-black text-slate-300 uppercase mb-3 tracking-widest">{d}</div>
               ))}
               {m.days.map((day, dIdx) => {
                 if (!day) return <div key={`empty-${mIdx}-${dIdx}`} />;
@@ -179,14 +179,17 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, endDate, o
                     onMouseLeave={() => setHoverDate(null)}
                     onClick={(e) => handleDateClick(e, day)}
                     className={`
-                      relative h-10 sm:h-12 w-full flex items-center justify-center text-sm font-bold transition-all
+                      relative h-9 sm:h-11 w-full flex items-center justify-center text-xs sm:text-sm font-bold transition-all
                       ${past ? 'text-slate-100 cursor-not-allowed' : 'text-slate-600'}
-                      ${selected ? 'bg-[#0088cc] !text-white rounded-xl z-20 shadow-lg' : ''}
+                      ${selected ? 'bg-[#0088cc] !text-white rounded-lg z-20 shadow-lg scale-110' : ''}
                       ${range && !selected ? 'bg-sky-50 text-[#0088cc]' : ''}
-                      ${!past && !selected && !range ? 'hover:bg-slate-50 rounded-xl' : ''}
+                      ${!past && !selected && !range ? 'hover:bg-slate-50 rounded-lg' : ''}
                     `}
                   >
                     {day.getDate()}
+                    {selected && !endDate && startDate === dStr && (
+                      <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-white rounded-full"></span>
+                    )}
                   </button>
                 );
               })}
@@ -196,25 +199,25 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, endDate, o
       </div>
 
       {/* Footer */}
-      <div className="mt-8 sm:mt-12 pt-8 sm:pt-10 border-t border-slate-50 flex flex-col sm:flex-row items-center justify-between gap-8">
-         <div className="flex gap-10 items-center">
+      <div className="mt-6 sm:mt-10 pt-6 sm:pt-8 border-t border-slate-50 flex flex-col sm:flex-row items-center justify-between gap-6">
+         <div className="flex gap-6 sm:gap-10 items-center bg-slate-50/50 px-6 py-3 rounded-2xl border border-slate-100 w-full sm:w-auto">
             <div className="text-left">
-              <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest block leading-none mb-2">Check-In</span>
-              <span className="text-xl font-bold text-slate-900 font-sans tracking-tight">
+              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block leading-none mb-1">Check-In</span>
+              <span className="text-base font-black text-slate-900 font-sans tracking-tight">
                 {formatDateLabel(startDate)}
               </span>
             </div>
-            <div className="w-8 h-[2px] bg-slate-100"></div>
+            <div className="w-6 h-[1px] bg-slate-200"></div>
             <div className="text-left">
-              <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest block leading-none mb-2">Check-Out</span>
-              <span className="text-xl font-bold text-slate-900 font-sans tracking-tight">
+              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block leading-none mb-1">Check-Out</span>
+              <span className="text-base font-black text-slate-900 font-sans tracking-tight">
                 {formatDateLabel(endDate)}
               </span>
             </div>
          </div>
          <button 
            onClick={(e) => { e.stopPropagation(); onClose?.(); }}
-           className="w-full sm:w-auto px-16 py-5 bg-[#0088cc] text-white rounded-[1.25rem] text-xs font-black uppercase tracking-[0.2em] shadow-2xl shadow-[#0088cc]/20 hover:bg-[#0077bb] transition-all active:scale-95"
+           className="w-full sm:w-auto px-12 py-4 bg-[#0088cc] text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl hover:bg-[#0077bb] transition-all active:scale-95"
          >
            CONFIRM STAY
          </button>
