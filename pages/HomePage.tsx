@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Villa, VillaFilters, SiteSettings, Testimonial } from '../types';
+import { Villa, VillaFilters, SiteSettings, Testimonial, AppTheme } from '../types';
 import VillaCard from '../components/VillaCard';
 import DateRangePicker from '../components/DateRangePicker';
 import { BRAND_NAME, HOTSPOT_LOCATIONS } from '../constants';
@@ -20,7 +20,6 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   
   const locationRef = useRef<HTMLDivElement>(null);
-  const datePickerRef = useRef<HTMLDivElement>(null);
 
   const [searchFilters, setSearchFilters] = useState<VillaFilters>({
     location: '', minPrice: 0, maxPrice: 150000, bedrooms: 0, guests: 2, checkIn: '', checkOut: ''
@@ -36,9 +35,6 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
     const handleClickOutside = (event: MouseEvent) => {
       if (locationRef.current && !locationRef.current.contains(event.target as Node)) {
         setShowLocationSuggestions(false);
-      }
-      if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
-        setShowPicker(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -56,10 +52,52 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
     onExplore(searchFilters);
   };
 
+  // Seasonal Theme Content Config
+  const getSeasonalOffer = () => {
+    const theme = settings.activeTheme;
+    switch(theme) {
+      case AppTheme.REPUBLIC_DAY:
+      case AppTheme.INDEPENDENCE_DAY:
+        return {
+          title: "Freedom Sale: Flat 26% OFF",
+          code: "NY25",
+          desc: "Celebrate the spirit of the nation in a sanctuary of luxury.",
+          gradient: "from-orange-500 via-white to-emerald-500",
+          icon: "fa-flag"
+        };
+      case AppTheme.HOLI:
+        return {
+          title: "Holi Hai! Weekend Getaway",
+          code: "HOLI25",
+          desc: "Splash into luxury this festival of colors. Book now for vibrant memories.",
+          gradient: "from-pink-500 via-yellow-400 to-sky-400",
+          icon: "fa-palette"
+        };
+      case AppTheme.DIWALI:
+        return {
+          title: "Diwali Delight: Light Up Your Vacation",
+          code: "DEEP25",
+          desc: "Celebrate the festival of lights in a golden private retreat.",
+          gradient: "from-amber-400 via-amber-600 to-indigo-950",
+          icon: "fa-om"
+        };
+      default:
+        return {
+          title: "Exclusive Seasonal Escapes",
+          code: "PEAK25",
+          desc: "Handpicked private retreats curated for the discerning traveler.",
+          gradient: "from-sky-600 to-sky-400",
+          icon: "fa-crown"
+        };
+    }
+  };
+
+  const offer = getSeasonalOffer();
+
   return (
-    <div className="bg-[#fcfdfe] pb-24">
+    <div className="bg-transparent pb-24">
       
-      {/* Hero Section - Better scaling for small devices */}
+      {/* Hero Section */}
       <section className="relative min-h-[85vh] sm:min-h-[80vh] flex flex-col items-center justify-center px-4 overflow-hidden">
         <div className="absolute inset-0 z-0">
           <img 
@@ -68,7 +106,7 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
             style={{ transform: `scale(${1.1 + scrollY * 0.0001}) translateY(${scrollY * 0.1}px)` }}
             alt="Hero Background" 
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-slate-900/60 via-slate-900/20 to-[#fcfdfe]"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-slate-900/60 via-slate-900/20 to-[var(--t-bg)]"></div>
         </div>
 
         <div className="relative z-10 text-center max-w-5xl mb-12 sm:mb-20 px-4 animate-reveal">
@@ -81,16 +119,16 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
             <span className="text-sky-300 italic">Redefined</span>.
           </h1>
           <p className="text-white/80 text-sm sm:text-xl max-w-2xl mx-auto font-medium leading-relaxed drop-shadow-md px-4">
-            Hand-picked private retreats curated for the discerning traveler. Find your next masterpiece of comfort.
+            {offer.desc}
           </p>
         </div>
 
-        {/* Improved Search Hub - Mobile Stack vs Desktop Row */}
+        {/* Search Hub */}
         <div className="relative z-[100] w-full max-w-6xl px-4 animate-reveal [animation-delay:300ms]">
           <div className="bg-white rounded-[2rem] sm:rounded-full p-2 sm:p-3 shadow-[0_30px_100px_rgba(0,0,0,0.15)] border border-slate-50">
             <div className="flex flex-col lg:flex-row items-stretch lg:items-center">
               
-              {/* Destination - Flexible Width */}
+              {/* Destination */}
               <div className="flex-1 px-6 sm:px-10 py-5 sm:py-6 relative group border-b lg:border-b-0 lg:border-r border-slate-100" ref={locationRef}>
                 <label className="block text-[8px] sm:text-[10px] font-black text-sky-600 uppercase tracking-widest mb-1.5 text-left">Destination</label>
                 <div className="flex items-center gap-4">
@@ -123,9 +161,11 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
                 )}
               </div>
 
-              {/* Date Picker - Unified Popover */}
-              <div className="flex-1 px-6 sm:px-10 py-5 sm:py-6 cursor-pointer text-left group hover:bg-slate-50/50 transition-colors border-b lg:border-b-0 lg:border-r border-slate-100 relative"
-                ref={datePickerRef} onClick={() => setShowPicker(!showPicker)}>
+              {/* Date Selection Trigger */}
+              <div 
+                className="flex-1 px-6 sm:px-10 py-5 sm:py-6 cursor-pointer text-left group hover:bg-slate-50/50 transition-colors border-b lg:border-b-0 lg:border-r border-slate-100"
+                onClick={() => setShowPicker(true)}
+              >
                 <label className="block text-[8px] sm:text-[10px] font-black text-sky-600 uppercase tracking-widest mb-1.5">Stay Period</label>
                 <div className="flex items-center gap-4">
                   <i className="fa-solid fa-calendar-alt text-sky-400 text-lg"></i>
@@ -139,17 +179,6 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
                     </span>
                   </div>
                 </div>
-
-                {showPicker && (
-                  <div className="absolute top-[calc(100%+1rem)] left-1/2 lg:left-0 -translate-x-1/2 lg:translate-x-0 z-[300] w-[95vw] lg:w-auto animate-scale" onClick={e => e.stopPropagation()}>
-                    <DateRangePicker 
-                      startDate={searchFilters.checkIn || ''} 
-                      endDate={searchFilters.checkOut || ''} 
-                      onChange={(s, e) => setSearchFilters({...searchFilters, checkIn: s, checkOut: e})} 
-                      onClose={() => setShowPicker(false)} 
-                    />
-                  </div>
-                )}
               </div>
 
               {/* Search Trigger */}
@@ -158,7 +187,7 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
                   onClick={handleSearch} 
                   className="w-full lg:w-auto px-10 sm:px-16 py-5 sm:py-6 rounded-2xl sm:rounded-full font-black text-[11px] sm:text-[13px] uppercase tracking-[0.3em] flex items-center justify-center gap-4 bg-sky-600 text-white shadow-2xl shadow-sky-600/20 hover:bg-sky-700 hover:scale-105 active:scale-95 transition-all"
                 >
-                  Find My Sanctuary <i className="fa-solid fa-compass animate-spin-slow"></i>
+                  Find Sanctuary <i className="fa-solid fa-compass"></i>
                 </button>
               </div>
             </div>
@@ -166,7 +195,58 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
         </div>
       </section>
 
-      {/* Trust Grid - Elegant Icons and Typography */}
+      {/* FIXED VIEWPORT DATE PICKER OVERLAY */}
+      {showPicker && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xl animate-fade overflow-y-auto" onClick={() => setShowPicker(false)}>
+           <div className="relative animate-scale py-12" onClick={e => e.stopPropagation()}>
+              <button 
+                onClick={() => setShowPicker(false)}
+                className="absolute top-4 right-0 w-12 h-12 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center text-white hover:bg-white hover:text-slate-900 transition-all z-20"
+              >
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+              <DateRangePicker 
+                startDate={searchFilters.checkIn || ''} 
+                endDate={searchFilters.checkOut || ''} 
+                onChange={(s, e) => setSearchFilters({...searchFilters, checkIn: s, checkOut: e})} 
+                onClose={() => setShowPicker(false)} 
+              />
+           </div>
+        </div>
+      )}
+
+      {/* Seasonal Highlight Offer Section */}
+      <section className="max-w-5xl mx-auto px-4 mt-20 sm:mt-32">
+        <div className={`p-1 bg-gradient-to-tr ${offer.gradient} rounded-[3rem] shadow-2xl animate-reveal`}>
+          <div className="bg-white rounded-[2.8rem] p-10 sm:p-16 flex flex-col md:flex-row items-center justify-between gap-10">
+            <div className="text-left space-y-4 max-w-xl">
+               <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-900 shadow-inner">
+                    <i className={`fa-solid ${offer.icon} text-xl`}></i>
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">Current Site Promotion</span>
+               </div>
+               <h2 className="text-3xl sm:text-5xl font-bold font-serif text-slate-900 leading-tight">
+                 {offer.title}
+               </h2>
+               <p className="text-slate-500 font-medium text-sm sm:text-lg italic">
+                 "{offer.desc}"
+               </p>
+            </div>
+            <div className="flex flex-col items-center gap-4 bg-slate-50 p-8 rounded-[2.5rem] min-w-[240px] shadow-inner">
+               <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Apply Code</p>
+               <div className="px-10 py-4 bg-white border-2 border-dashed border-slate-200 rounded-2xl text-2xl font-black tracking-[0.2em] text-slate-900">
+                  {offer.code}
+               </div>
+               <button onClick={() => onExplore()} className="mt-4 px-10 py-5 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-sky-600 transition-all shadow-xl active:scale-95">
+                 Redeem Offer
+               </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Trust Grid */}
       <section className="max-w-7xl mx-auto px-4 py-20 sm:py-32">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-12">
           {[
@@ -174,18 +254,18 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
             { l: "Elite Concierge", d: "Personal stay orchestrators available 24/7 for your specific needs.", i: "fa-concierge-bell" },
             { l: "Legacy Guarantee", d: "Peace of mind through secure bookings and transparent stay policies.", i: "fa-shield-heart" }
           ].map((trust, i) => (
-            <div key={i} className="text-center p-10 rounded-[3rem] bg-white border border-slate-50 shadow-sm hover:shadow-xl transition-all group">
+            <div key={i} className="text-center p-10 rounded-[3rem] bg-[var(--t-card-bg)] border border-[var(--glass-border)] shadow-sm hover:shadow-xl transition-all group">
               <div className="w-16 h-16 bg-sky-50 rounded-[2rem] flex items-center justify-center text-2xl text-sky-600 group-hover:bg-sky-600 group-hover:text-white transition-all mx-auto mb-8 shadow-inner">
                  <i className={`fa-solid ${trust.i}`}></i>
               </div>
-              <h3 className="text-xl sm:text-2xl font-bold font-serif text-slate-900 mb-4">{trust.l}</h3>
+              <h3 className="text-xl sm:text-2xl font-bold font-serif text-[var(--t-text)] mb-4">{trust.l}</h3>
               <p className="text-sm text-slate-500 font-medium leading-relaxed px-4">{trust.d}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Popular Selection - Grid that scales from 1 to 3 columns */}
+      {/* Popular Selection */}
       <section className="max-w-7xl mx-auto px-4 pb-32">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 sm:mb-24 gap-8">
           <div className="max-w-2xl text-left">
@@ -193,11 +273,11 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
                <div className="w-10 h-[2px] bg-sky-500"></div>
                <span className="text-sky-600 font-black uppercase tracking-[0.5em] text-[9px] sm:text-[11px]">The Gold List</span>
             </div>
-            <h2 className="text-4xl sm:text-7xl font-bold font-serif text-slate-900 leading-[1] tracking-tighter">Signature Stays</h2>
+            <h2 className="text-4xl sm:text-7xl font-bold font-serif text-[var(--t-text)] leading-[1] tracking-tighter">Signature Stays</h2>
             <p className="mt-6 text-slate-500 font-medium text-base sm:text-xl">Discover architectural marvels handpicked for those who appreciate the finer things.</p>
           </div>
           <button onClick={() => onExplore()} className="w-full sm:w-auto group flex items-center justify-center gap-4 text-[10px] sm:text-[12px] font-black uppercase tracking-[0.4em] text-white bg-slate-900 px-10 py-5 rounded-2xl sm:rounded-full hover:bg-sky-600 transition-all shadow-2xl active:scale-95">
-            View All Catalog <i className="fa-solid fa-arrow-right group-hover:translate-x-2 transition-transform"></i>
+            View Catalog <i className="fa-solid fa-arrow-right group-hover:translate-x-2 transition-transform"></i>
           </button>
         </div>
         
@@ -209,16 +289,6 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
           ))}
         </div>
       </section>
-
-      <style>{`
-        .animate-spin-slow {
-          animation: spin 8s linear infinite;
-        }
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 };

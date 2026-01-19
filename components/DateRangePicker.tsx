@@ -10,20 +10,20 @@ interface DateRangePickerProps {
 
 const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, endDate, onChange, onClose }) => {
   const [viewDate, setViewDate] = useState(() => {
-    if (startDate) {
-      const [y, m, d] = startDate.split('-').map(Number);
-      if (!isNaN(y) && !isNaN(m)) {
-        return new Date(y, m - 1, 1);
+    if (startDate && startDate.includes('-')) {
+      const parts = startDate.split('-').map(Number);
+      if (parts.length === 3 && !parts.some(isNaN)) {
+        return new Date(parts[0], parts[1] - 1, 1);
       }
     }
     return new Date();
   });
 
   useEffect(() => {
-    if (startDate) {
-      const [y, m, d] = startDate.split('-').map(Number);
-      if (!isNaN(y) && !isNaN(m)) {
-        const newView = new Date(y, m - 1, 1);
+    if (startDate && startDate.includes('-')) {
+      const parts = startDate.split('-').map(Number);
+      if (parts.length === 3 && !parts.some(isNaN)) {
+        const newView = new Date(parts[0], parts[1] - 1, 1);
         if (newView.getMonth() !== viewDate.getMonth() || newView.getFullYear() !== viewDate.getFullYear()) {
           setViewDate(newView);
         }
@@ -33,7 +33,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, endDate, o
 
   const [hoverDate, setHoverDate] = useState<string | null>(null);
 
-  const daysOfWeek = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+  const daysOfWeek = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
 
   const toLocalDateString = (date: Date) => {
     const year = date.getFullYear();
@@ -61,7 +61,6 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, endDate, o
     };
   };
 
-  // Keep dual month on desktop but in a tighter container
   const months = useMemo(() => {
     const d1 = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
     const d2 = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1);
@@ -91,9 +90,6 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, endDate, o
         onChange('', '');
       } else {
         onChange(startDate, dateStr);
-        if (onClose) {
-          setTimeout(onClose, 200);
-        }
       }
     }
   };
@@ -128,48 +124,56 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, endDate, o
     return dStr < todayStr;
   };
 
+  const formatDateLabel = (dateStr: string) => {
+    if (!dateStr) return '--/--';
+    const [y, m, d] = dateStr.split('-');
+    return `${d}/${m}`;
+  };
+
   return (
     <div 
-      className="bg-white rounded-[1.5rem] sm:rounded-[2rem] shadow-[0_20px_60px_rgba(0,0,0,0.15)] border border-slate-100 p-4 sm:p-6 w-full max-w-[340px] sm:max-max-w-none sm:w-auto animate-scale"
+      className="bg-white rounded-[2.5rem] shadow-[0_30px_100px_rgba(0,0,0,0.2)] border border-slate-100 p-6 sm:p-10 w-full max-w-[340px] sm:max-w-none sm:w-auto animate-scale overflow-hidden"
       onClick={(e) => e.stopPropagation()}
     >
-      {/* Mini Header */}
-      <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-50">
+      {/* Header */}
+      <div className="flex justify-between items-start mb-8">
         <div className="text-left">
-          <p className="text-[7px] font-black text-sky-600 uppercase tracking-widest leading-none mb-1">Stay Schedule</p>
-          <p className="text-sm font-bold text-slate-900 font-serif leading-none">Choose Dates</p>
+          <p className="text-[10px] font-black text-sky-500 uppercase tracking-widest leading-none mb-2">Stay Schedule</p>
+          <h2 className="text-2xl font-bold text-slate-900 font-serif leading-none">Choose Dates</h2>
         </div>
         <button 
           onClick={(e) => { e.stopPropagation(); onChange('', ''); }}
-          className="text-[9px] font-black text-slate-400 uppercase tracking-widest hover:text-red-500 transition-colors"
+          className="text-[11px] font-black text-slate-300 uppercase tracking-widest hover:text-red-500 transition-all pt-2"
         >
-          Reset
+          RESET
         </button>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-6 md:gap-8 relative">
-        {/* Nav Controls - More discrete */}
-        <button 
-          onClick={handlePrevMonth}
-          className="absolute left-0 top-0 p-1.5 hover:bg-slate-50 rounded-lg transition-all z-20"
-        >
-          <i className="fa-solid fa-chevron-left text-[10px] text-slate-400"></i>
-        </button>
-        <button 
-          onClick={handleNextMonth}
-          className="absolute right-0 top-0 p-1.5 hover:bg-slate-50 rounded-lg transition-all z-20"
-        >
-          <i className="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
-        </button>
-
+      <div className="flex flex-col md:flex-row gap-8 md:gap-16 relative">
         {months.map((m, mIdx) => (
-          <div key={`${m.name}-${m.year}-${mIdx}`} className={`flex-1 ${mIdx === 1 ? 'hidden md:block' : ''} min-w-[260px]`}>
-            <h3 className="text-center font-bold text-slate-800 mb-4 font-serif text-sm">
-              {m.name} {m.year}
-            </h3>
-            <div className="grid grid-cols-7 gap-y-1">
+          <div key={`${m.name}-${m.year}-${mIdx}`} className={`flex-1 ${mIdx === 1 ? 'hidden md:block' : ''} min-w-[280px]`}>
+            {/* Month Navigation Row */}
+            <div className="flex items-center justify-between mb-6">
+              {mIdx === 0 ? (
+                <button onClick={handlePrevMonth} className="p-2 hover:bg-slate-50 rounded-full transition-all">
+                  <i className="fa-solid fa-chevron-left text-slate-400 text-xs"></i>
+                </button>
+              ) : <div className="w-8" />}
+              
+              <h3 className="font-bold text-slate-800 font-serif text-lg">
+                {m.name} {m.year}
+              </h3>
+
+              {(mIdx === 1 || (mIdx === 0 && window.innerWidth < 768)) ? (
+                <button onClick={handleNextMonth} className="p-2 hover:bg-slate-50 rounded-full transition-all">
+                  <i className="fa-solid fa-chevron-right text-slate-400 text-xs"></i>
+                </button>
+              ) : <div className="w-8" />}
+            </div>
+
+            <div className="grid grid-cols-7 gap-y-1 mb-2">
               {daysOfWeek.map(d => (
-                <div key={d} className="text-center text-[8px] font-black text-slate-300 uppercase mb-1 tracking-widest">{d}</div>
+                <div key={d} className="text-center text-[9px] font-black text-slate-200 uppercase mb-2 tracking-widest">{d}</div>
               ))}
               {m.days.map((day, dIdx) => {
                 if (!day) return <div key={`empty-${mIdx}-${dIdx}`} />;
@@ -186,11 +190,11 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, endDate, o
                     onMouseLeave={() => setHoverDate(null)}
                     onClick={(e) => handleDateClick(e, day)}
                     className={`
-                      relative h-8 sm:h-9 w-full flex items-center justify-center text-[10px] sm:text-xs font-bold transition-all
-                      ${past ? 'text-slate-100 cursor-not-allowed' : 'text-slate-600'}
-                      ${selected ? 'bg-slate-900 !text-white rounded-lg z-20 shadow-sm' : ''}
-                      ${range && !selected ? 'bg-sky-50 text-sky-900' : ''}
-                      ${!past && !selected && !range ? 'hover:bg-slate-50 rounded-lg' : ''}
+                      relative h-10 sm:h-12 w-full flex items-center justify-center text-xs sm:text-sm font-bold transition-all
+                      ${past ? 'text-slate-100 cursor-not-allowed' : 'text-slate-500'}
+                      ${selected ? 'bg-[#0088cc] !text-white rounded-xl z-20 shadow-lg' : ''}
+                      ${range && !selected ? 'bg-sky-50 text-[#0088cc]' : ''}
+                      ${!past && !selected && !range ? 'hover:bg-slate-50 rounded-xl' : ''}
                     `}
                   >
                     {day.getDate()}
@@ -202,24 +206,28 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, endDate, o
         ))}
       </div>
 
-      {/* Tighter Footer */}
-      <div className="mt-6 pt-4 border-t border-slate-50 flex items-center justify-between gap-4">
-         <div className="flex gap-3 items-center">
+      {/* Footer */}
+      <div className="mt-8 pt-8 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-6">
+         <div className="flex gap-8 items-center">
             <div className="text-left">
-              <span className="text-[7px] font-black text-slate-300 uppercase tracking-widest block leading-none mb-0.5">Check-In</span>
-              <span className="text-[10px] font-bold text-slate-900">{startDate ? startDate.split('-').reverse().slice(0,2).join('/') : '--/--'}</span>
+              <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest block leading-none mb-2">Check-In</span>
+              <span className="text-lg font-bold text-slate-900 font-sans tracking-tight">
+                {formatDateLabel(startDate)}
+              </span>
             </div>
-            <div className="w-3 h-[1px] bg-slate-100"></div>
+            <div className="w-6 h-[2px] bg-slate-100"></div>
             <div className="text-left">
-              <span className="text-[7px] font-black text-slate-300 uppercase tracking-widest block leading-none mb-0.5">Check-Out</span>
-              <span className="text-[10px] font-bold text-slate-900">{endDate ? endDate.split('-').reverse().slice(0,2).join('/') : '--/--'}</span>
+              <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest block leading-none mb-2">Check-Out</span>
+              <span className="text-lg font-bold text-slate-900 font-sans tracking-tight">
+                {formatDateLabel(endDate)}
+              </span>
             </div>
          </div>
          <button 
            onClick={(e) => { e.stopPropagation(); onClose?.(); }}
-           className="px-5 py-2.5 bg-sky-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg hover:bg-sky-700 transition-colors"
+           className="w-full sm:w-auto px-12 py-5 bg-[#0088cc] text-white rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl shadow-sky-600/20 hover:bg-[#0077bb] transition-all active:scale-95"
          >
-           Confirm Stay
+           CONFIRM STAY
          </button>
       </div>
     </div>
