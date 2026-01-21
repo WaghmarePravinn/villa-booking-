@@ -1,6 +1,19 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
+/**
+ * Helper to clean AI response string and ensure it's valid JSON
+ */
+const cleanJsonResponse = (text: string | undefined): string => {
+  if (!text) return "{}";
+  // Remove markdown code blocks if present
+  let cleaned = text.trim();
+  if (cleaned.startsWith("```")) {
+    cleaned = cleaned.replace(/^```(?:json)?\s+/, "").replace(/\s+```$/, "");
+  }
+  return cleaned;
+};
+
 export const generateVillaDescription = async (villaName: string, location: string, features: string[]): Promise<{ short: string, long: string }> => {
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -16,7 +29,7 @@ export const generateVillaDescription = async (villaName: string, location: stri
 
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: prompt,
+      contents: [{ parts: [{ text: prompt }] }],
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -30,13 +43,15 @@ export const generateVillaDescription = async (villaName: string, location: stri
       }
     });
 
-    const result = JSON.parse(response.text || '{"short": "", "long": ""}');
+    const cleanedText = cleanJsonResponse(response.text);
+    const result = JSON.parse(cleanedText || '{"short": "", "long": ""}');
+    
     return {
       short: result.short || "A bespoke sanctuary where coastal minimalism meets unrivaled luxury.",
       long: result.long || "An exquisite private retreat offering a seamless blend of sophisticated design and tranquility."
     };
   } catch (error) {
-    console.error("Gemini AI Error:", error);
+    console.error("Gemini Description Error:", error);
     return {
       short: "An exquisite private retreat offering a seamless blend of sophisticated design.",
       long: "Experience the pinnacle of luxury in this hand-curated sanctuary, designed for those who seek privacy and elegance in equal measure."
@@ -50,11 +65,13 @@ export const generateVillaDescription = async (villaName: string, location: stri
 export const generateVillaFromPrompt = async (userInput: string): Promise<any> => {
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const response = await ai.models.generateContent({
-      model: "gemini-3-pro-preview",
-      contents: `Generate a complete structured luxury villa profile based on this description: "${userInput}". 
+    const prompt = `Generate a complete structured luxury villa profile based on this description: "${userInput}". 
       Estimate counts if not explicitly mentioned (e.g., 3BHK usually has 3-4 bathrooms and capacity of 6-10).
-      Return the data as a clean JSON object.`,
+      Return the data as a clean JSON object.`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: [{ parts: [{ text: prompt }] }],
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -77,9 +94,12 @@ export const generateVillaFromPrompt = async (userInput: string): Promise<any> =
       }
     });
 
-    return JSON.parse(response.text || "{}");
+    const cleanedText = cleanJsonResponse(response.text);
+    if (!cleanedText || cleanedText === "{}") return null;
+
+    return JSON.parse(cleanedText);
   } catch (error) {
-    console.error("Gemini Parsing Error:", error);
+    console.error("Gemini Drafting Error:", error);
     return null;
   }
 };

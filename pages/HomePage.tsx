@@ -20,6 +20,7 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   
   const locationRef = useRef<HTMLDivElement>(null);
+  const dateTriggerRef = useRef<HTMLDivElement>(null);
 
   const [searchFilters, setSearchFilters] = useState<VillaFilters>({
     location: '', minPrice: 0, maxPrice: 150000, bedrooms: 0, guests: 2, checkIn: '', checkOut: ''
@@ -32,29 +33,21 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
   }, []);
 
   useEffect(() => {
-    // Lock scroll when picker is active to ensure the overlay stays perfectly centered
-    if (showPicker) {
-      document.body.style.overflow = 'hidden';
-      document.body.style.paddingRight = 'var(--scrollbar-width, 0px)'; // Optional: prevent layout shift
-    } else {
-      document.body.style.overflow = '';
-      document.body.style.paddingRight = '';
-    }
-    return () => { 
-      document.body.style.overflow = '';
-      document.body.style.paddingRight = '';
-    };
-  }, [showPicker]);
-
-  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (locationRef.current && !locationRef.current.contains(event.target as Node)) {
         setShowLocationSuggestions(false);
       }
+      // Close date picker if clicking outside on desktop
+      if (showPicker && window.innerWidth >= 1024) {
+        if (dateTriggerRef.current && !dateTriggerRef.current.contains(event.target as Node)) {
+           // We don't close here because the picker itself is a portal/overlay
+           // Handled by the overlay div on mobile/desktop-modal style
+        }
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [showPicker]);
 
   useEffect(() => {
     const unsub = subscribeToTestimonials(setTestimonials);
@@ -177,8 +170,9 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
 
               {/* Date Selection Trigger */}
               <div 
-                className="flex-1 px-5 sm:px-10 py-4 sm:py-6 cursor-pointer text-left group hover:bg-slate-50/50 transition-colors border-b lg:border-b-0 lg:border-r border-slate-50"
-                onClick={() => setShowPicker(true)}
+                ref={dateTriggerRef}
+                className="flex-1 px-5 sm:px-10 py-4 sm:py-6 cursor-pointer text-left group hover:bg-slate-50/50 transition-colors border-b lg:border-b-0 lg:border-r border-slate-50 relative"
+                onClick={() => setShowPicker(!showPicker)}
               >
                 <label className="block text-[7px] sm:text-[10px] font-black text-sky-600 uppercase tracking-widest mb-1">Stay Period</label>
                 <div className="flex items-center gap-3 sm:gap-4">
@@ -193,6 +187,24 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
                     </span>
                   </div>
                 </div>
+
+                {/* Localized Date Picker Popup (Desktop) */}
+                {showPicker && (
+                  <div 
+                    className="hidden lg:block absolute top-[calc(100%+1.5rem)] left-0 z-[500] w-[800px] animate-scale"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <DateRangePicker 
+                      startDate={searchFilters.checkIn || ''} 
+                      endDate={searchFilters.checkOut || ''} 
+                      onChange={(s, e) => {
+                        setSearchFilters({...searchFilters, checkIn: s, checkOut: e});
+                        if (s && e) setShowPicker(false); // Auto-close on complete selection
+                      }} 
+                      onClose={() => setShowPicker(false)} 
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Search Trigger */}
@@ -209,17 +221,16 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
         </div>
       </section>
 
-      {/* FLOATING DATE PICKER OVERLAY - Centered in viewport */}
+      {/* FIXED MOBILE DATE PICKER OVERLAY - Cleaner Backdrop */}
       {showPicker && (
         <div 
-          className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-2xl animate-fade"
+          className="lg:hidden fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade"
           onClick={() => setShowPicker(false)}
         >
            <div 
              className="relative animate-scale flex flex-col items-center max-w-full w-full sm:w-auto h-auto" 
              onClick={e => e.stopPropagation()}
            >
-              {/* Reachable Close Button positioned on the component itself */}
               <button 
                 onClick={() => setShowPicker(false)}
                 className="absolute -top-3 -right-3 sm:-top-5 sm:-right-5 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-900 text-white flex items-center justify-center hover:bg-sky-600 transition-all z-[1010] shadow-2xl active:scale-90"

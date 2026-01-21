@@ -27,6 +27,13 @@ interface ProgressState {
   status: 'syncing' | 'synced' | 'error' | 'idle';
 }
 
+const SERVICE_ICONS = [
+  'fa-concierge-bell', 'fa-utensils', 'fa-car', 'fa-spa', 'fa-swimming-pool', 
+  'fa-wifi', 'fa-shield-halved', 'fa-soap', 'fa-wine-glass', 'fa-coffee', 
+  'fa-tv', 'fa-key', 'fa-vault', 'fa-bicycle', 'fa-dumbbell', 'fa-fire-burner',
+  'fa-person-swimming', 'fa-van-shuttle', 'fa-broom', 'fa-baby-carriage'
+];
+
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAddVilla, onUpdateVilla, onDeleteVilla, onRefreshData }) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('inventory');
   const [isEditingVilla, setIsEditingVilla] = useState(false);
@@ -105,12 +112,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
     triggerSyncFeedback('AI Drafting Property...');
     try {
       const result = await generateVillaFromPrompt(aiPrompt);
-      if (result) {
+      if (result && Object.keys(result).length > 0) {
         setVillaForm(prev => ({ ...prev, ...result }));
         setAiPrompt('');
         triggerSyncFeedback('Drafted successfully', true);
       } else {
-        triggerSyncFeedback('AI Parse Error', false, 'Invalid format.');
+        triggerSyncFeedback('AI Parse Error', false, 'The model returned an incompatible format. Please try rephrasing.');
       }
     } catch (err: any) {
       triggerSyncFeedback('Generation Failed', false, err.message);
@@ -539,12 +546,29 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                     <textarea required className="w-full px-6 py-5 bg-slate-50 rounded-2xl h-32 text-sm font-medium border-none shadow-inner resize-none focus:ring-2 focus:ring-sky-500" value={serviceForm.description} onChange={e => setServiceForm({...serviceForm, description: e.target.value})} />
                  </div>
                  <div className="space-y-3">
-                    <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest px-2">Visual Icon (FA Class)</label>
-                    <div className="flex items-center gap-4">
+                    <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest px-2">Visual Icon Selection</label>
+                    <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 shadow-inner">
+                       <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
+                          {SERVICE_ICONS.map((iconClass) => (
+                            <button
+                              key={iconClass}
+                              type="button"
+                              onClick={() => setServiceForm({...serviceForm, icon: iconClass})}
+                              className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all ${serviceForm.icon === iconClass ? 'bg-slate-900 text-white shadow-lg' : 'bg-white text-slate-300 hover:text-slate-900 border border-slate-100'}`}
+                            >
+                               <i className={`fa-solid ${iconClass} text-xs`}></i>
+                            </button>
+                          ))}
+                       </div>
+                    </div>
+                    <div className="flex items-center gap-4 mt-4">
                        <div className="w-14 h-14 bg-slate-900 text-white rounded-2xl flex items-center justify-center text-2xl shadow-lg">
                           <i className={`fa-solid ${serviceForm.icon}`}></i>
                        </div>
-                       <input className="flex-grow px-6 py-5 bg-slate-50 rounded-2xl text-xs font-mono border-none shadow-inner focus:ring-2 focus:ring-sky-500" value={serviceForm.icon} onChange={e => setServiceForm({...serviceForm, icon: e.target.value})} />
+                       <div className="flex-grow">
+                         <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Selected Identifier</p>
+                         <p className="text-xs font-mono text-slate-900 bg-white border px-3 py-2 rounded-lg">{serviceForm.icon}</p>
+                       </div>
                     </div>
                  </div>
                  <button type="submit" disabled={isSyncing} className="w-full py-6 bg-slate-900 text-white rounded-[2rem] font-black uppercase text-[10px] tracking-[0.3em] shadow-2xl hover:bg-sky-600 transition-all flex items-center justify-center gap-4 active:scale-95 disabled:opacity-50">
@@ -594,7 +618,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                  </div>
                  <div className="space-y-3">
                     <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest px-2">Narrative Content</label>
-                    <textarea required className="w-full px-6 py-5 bg-slate-50 rounded-2xl h-40 text-sm font-medium border-none shadow-inner resize-none focus:ring-2 focus:ring-sky-500 outline-none" value={reviewForm.content} onChange={e => setReviewForm({...reviewForm, content: e.target.value})} />
+                    <textarea required className="w-full px-6 py-5 bg-slate-50 rounded-2xl h-40 text-sm font-medium border-none shadow-inner resize-none focus:ring-2 focus:ring-orange-500 outline-none" value={reviewForm.content} onChange={e => setReviewForm({...reviewForm, content: e.target.value})} />
                  </div>
                  <button type="submit" disabled={isSyncing} className="w-full py-6 bg-slate-900 text-white rounded-[2rem] font-black uppercase text-[10px] tracking-[0.3em] shadow-2xl hover:bg-emerald-600 transition-all active:scale-95 disabled:opacity-50">
                    {isSyncing ? <i className="fa-solid fa-rotate animate-spin"></i> : <i className="fa-solid fa-feather"></i>}
