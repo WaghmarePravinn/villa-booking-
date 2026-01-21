@@ -60,6 +60,46 @@ export const generateVillaDescription = async (villaName: string, location: stri
 };
 
 /**
+ * Generates descriptions based on a custom creative prompt
+ */
+export const generateCustomNarrative = async (villaName: string, instruction: string): Promise<{ short: string, long: string }> => {
+  try {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const prompt = `Act as a luxury hospitality copywriter. 
+    Property: "${villaName}".
+    Creative Instruction: "${instruction}".
+    
+    Task:
+    1. A short, punchy summary (max 150 chars).
+    2. A detailed narrative reflecting the instruction (max 600 chars).
+    
+    Return the data as a clean JSON object.`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: [{ parts: [{ text: prompt }] }],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            short: { type: Type.STRING },
+            long: { type: Type.STRING }
+          },
+          required: ["short", "long"]
+        }
+      }
+    });
+
+    const cleanedText = cleanJsonResponse(response.text);
+    return JSON.parse(cleanedText || '{"short": "", "long": ""}');
+  } catch (error) {
+    console.error("Gemini Custom Narrative Error:", error);
+    throw error;
+  }
+};
+
+/**
  * Parses a natural language prompt to generate a structured Villa object.
  */
 export const generateVillaFromPrompt = async (userInput: string): Promise<any> => {
