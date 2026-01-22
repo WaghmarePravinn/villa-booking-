@@ -51,9 +51,13 @@ const Layout: React.FC<LayoutProps> = ({ children, user, settings, onLogout, onN
             className="flex items-center cursor-pointer group space-x-2 sm:space-x-3 shrink-0" 
             onClick={() => onNavigate('home')}
           >
-            <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center transition-all duration-500 shadow-lg group-hover:scale-110 bg-sky-600">
-              <i className="fa-solid fa-mountain text-white text-xs sm:text-base"></i>
-            </div>
+            {settings.siteLogo ? (
+              <img src={settings.siteLogo} alt={BRAND_NAME} className="w-8 h-8 sm:w-11 sm:h-11 object-contain transition-transform group-hover:scale-110" />
+            ) : (
+              <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center transition-all duration-500 shadow-lg group-hover:scale-110 bg-sky-600">
+                <i className="fa-solid fa-mountain text-white text-xs sm:text-base"></i>
+              </div>
+            )}
             <div className="flex flex-col">
               <span className="text-xs sm:text-xl font-black font-serif tracking-tight uppercase leading-none text-slate-900">
                 Peak Stay
@@ -150,9 +154,13 @@ const Layout: React.FC<LayoutProps> = ({ children, user, settings, onLogout, onN
           <div className="grid grid-cols-1 md:grid-cols-12 gap-12 md:gap-24">
             <div className="md:col-span-5 text-center md:text-left">
               <div className="flex items-center justify-center md:justify-start mb-6">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center mr-4 bg-sky-600 shadow-lg">
-                   <i className="fa-solid fa-mountain text-white text-lg"></i>
-                </div>
+                {settings.siteLogo ? (
+                  <img src={settings.siteLogo} alt={BRAND_NAME} className="w-10 h-10 object-contain mr-4 brightness-0 invert" />
+                ) : (
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center mr-4 bg-sky-600 shadow-lg">
+                    <i className="fa-solid fa-mountain text-white text-lg"></i>
+                  </div>
+                )}
                 <span className="text-xl sm:text-3xl font-bold font-serif tracking-tight uppercase text-white">Peak Stay</span>
               </div>
               <p className="text-sm sm:text-xl text-slate-400 font-medium leading-relaxed italic opacity-80 mb-8 max-w-md mx-auto md:mx-0">

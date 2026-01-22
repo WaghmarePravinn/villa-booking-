@@ -51,9 +51,15 @@ const VillaListingPage: React.FC<VillaListingPageProps> = ({ villas, settings, o
     });
   }, [villas, filters, sortBy]);
 
+  const formatDateLabel = (dateStr: string) => {
+    if (!dateStr) return null;
+    const date = new Date(dateStr);
+    return `${date.getDate()} ${date.toLocaleString('default', { month: 'short' })}`;
+  };
+
   return (
     <div className="bg-[#fcfdfe] min-h-screen pb-24 lg:pb-32">
-      {/* Search Header - Streamlined for smaller screens */}
+      {/* Search Header */}
       <header className="bg-white border-b border-slate-100 pt-10 pb-10 sm:pt-20 sm:pb-16 mb-8 sm:mb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 flex flex-col md:flex-row justify-between items-center md:items-end gap-6 sm:gap-10 text-center md:text-left">
           <div className="max-w-2xl">
@@ -64,12 +70,23 @@ const VillaListingPage: React.FC<VillaListingPageProps> = ({ villas, settings, o
             <h1 className="text-3xl sm:text-7xl font-bold font-serif text-slate-900 leading-tight tracking-tighter">
               {filters.location ? `${filters.location} Collection` : 'Elite Portfolio'}
             </h1>
-            <p className="text-slate-400 mt-3 sm:mt-6 font-medium text-sm sm:text-xl opacity-80 leading-relaxed">
-              Discovering {filteredVillas.length} architectural masterpieces handpicked for your escape.
-            </p>
+            
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-4 sm:mt-6">
+              {filters.checkIn && filters.checkOut && (
+                <div className="flex items-center gap-2 bg-sky-50 px-4 py-2 rounded-full border border-sky-100">
+                  <i className="fa-solid fa-calendar-check text-sky-500 text-[10px]"></i>
+                  <span className="text-[9px] font-black text-sky-700 uppercase tracking-widest">
+                    {formatDateLabel(filters.checkIn)} — {formatDateLabel(filters.checkOut)}
+                  </span>
+                </div>
+              )}
+              <p className="text-slate-400 font-medium text-xs sm:text-lg opacity-80">
+                {filteredVillas.length} architectural masterpieces found.
+              </p>
+            </div>
           </div>
           
-          {/* Controls - Mobile friendly triggers */}
+          {/* Controls */}
           <div className="flex items-center gap-3 w-full md:w-auto">
             <button 
               onClick={() => setShowMobileFilters(true)} 

@@ -8,6 +8,30 @@ interface VillaCardProps {
   onViewDetails: (id: string) => void;
 }
 
+const LazyImage: React.FC<{ src: string; alt: string }> = ({ src, alt }) => {
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  return (
+    <div className="w-full h-full bg-slate-100 overflow-hidden relative">
+      {!isLoaded && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <i className="fa-solid fa-mountain-sun text-slate-200 text-2xl animate-pulse"></i>
+        </div>
+      )}
+      <img
+        src={src}
+        alt={alt}
+        loading="lazy"
+        decoding="async"
+        onLoad={() => setIsLoaded(true)}
+        className={`w-full h-full object-cover select-none transition-all duration-700 ease-in-out ${
+          isLoaded ? 'opacity-100 scale-100 blur-0' : 'opacity-0 scale-105 blur-lg'
+        }`}
+      />
+    </div>
+  );
+};
+
 const VillaCard: React.FC<VillaCardProps> = ({ villa, whatsappNumber, onViewDetails }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
@@ -59,25 +83,23 @@ const VillaCard: React.FC<VillaCardProps> = ({ villa, whatsappNumber, onViewDeta
       onMouseLeave={() => setIsHovered(false)}
       className="group bg-white rounded-[2rem] sm:rounded-[3rem] overflow-hidden border border-slate-100 cursor-pointer flex flex-col h-full hover-lift transition-all duration-500 shadow-sm hover:shadow-2xl"
     >
-      <div className="relative h-72 sm:h-[28rem] xl:h-[32rem] overflow-hidden">
+      <div className="relative h-72 sm:h-[28rem] xl:h-[32rem] overflow-hidden bg-slate-50">
         {/* Gallery Slider */}
         <div className="w-full h-full relative flex transition-transform duration-700 ease-[cubic-bezier(0.23,1,0.32,1)]" 
              style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}>
           {images.map((img, idx) => (
             <div key={idx} className="w-full h-full flex-shrink-0">
-              <img 
+              <LazyImage 
                 src={img} 
                 alt={`${villa.name} ${idx + 1}`} 
-                className="w-full h-full object-cover select-none"
-                loading="lazy"
               />
             </div>
           ))}
         </div>
 
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent opacity-60 sm:opacity-40 sm:group-hover:opacity-60 transition-opacity duration-500"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent opacity-60 sm:opacity-40 sm:group-hover:opacity-60 transition-opacity duration-500 pointer-events-none"></div>
         
-        {/* Navigation Controls - Always visible on mobile */}
+        {/* Navigation Controls */}
         {images.length > 1 && (
           <div className="absolute inset-x-3 sm:inset-x-4 top-1/2 -translate-y-1/2 flex justify-between items-center pointer-events-none">
             <button 
@@ -109,66 +131,82 @@ const VillaCard: React.FC<VillaCardProps> = ({ villa, whatsappNumber, onViewDeta
         )}
 
         {/* Badges Overlay */}
-        <div className="absolute top-4 sm:top-8 left-4 sm:left-8 right-4 sm:right-8 flex justify-between items-start z-10">
+        <div className="absolute top-4 sm:top-8 left-4 sm:left-8 right-4 sm:right-8 flex justify-between items-start z-10 pointer-events-none">
           <div className="flex flex-col gap-1.5 sm:gap-2">
             {villa.isFeatured && (
-              <div className="bg-amber-500/95 backdrop-blur-md px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg sm:rounded-2xl text-[7px] sm:text-[9px] font-black text-white shadow-xl uppercase tracking-widest flex items-center gap-1.5 sm:gap-2">
-                <i className="fa-solid fa-crown text-[8px] sm:text-base"></i>
-                Signature
+              <div className="bg-amber-500/95 backdrop-blur-md px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg sm:rounded-2xl text-[7px] sm:text-[9px] font-black text-white shadow-xl uppercase tracking-widest flex items-center gap-2">
+                 <i className="fa-solid fa-crown"></i> Signature
               </div>
             )}
-            {villa.petFriendly && (
-              <div className="bg-emerald-500/90 backdrop-blur-md px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-lg text-[7px] font-black text-white shadow-lg uppercase tracking-widest self-start">
-                <i className="fa-solid fa-paw mr-1"></i> Pet Friendly
-              </div>
-            )}
-          </div>
-          <div className="bg-white/95 backdrop-blur-md px-2.5 sm:px-5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-2xl text-[9px] sm:text-[11px] font-black text-slate-900 shadow-xl flex items-center gap-1 sm:gap-2 sm:group-hover:bg-slate-900 sm:group-hover:text-white transition-all duration-300">
-            <i className="fa-solid fa-star text-amber-500"></i>
-            {villa.rating}
-          </div>
-        </div>
-      </div>
-
-      <div className="p-6 sm:p-10 flex flex-col flex-grow text-left">
-        <h3 className="text-xl sm:text-2xl xl:text-3xl font-bold font-serif text-slate-900 leading-tight mb-2 sm:group-hover:text-sky-600 transition-colors duration-300">
-          {villa.name}
-        </h3>
-        <div className="flex items-center gap-2 mb-6">
-          <i className="fa-solid fa-location-dot text-sky-400 text-[10px]"></i>
-          <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest truncate">{villa.location}</p>
-        </div>
-        
-        <div className="flex items-center gap-6 sm:gap-8 mb-6 sm:mb-8 pb-5 sm:pb-6 border-b border-slate-50">
-           <div className="flex items-center gap-2.5 sm:gap-3">
-              <div className="w-8 h-8 rounded-lg bg-sky-50 flex items-center justify-center text-sky-500 sm:group-hover:bg-sky-500 sm:group-hover:text-white transition-all duration-300">
-                <i className="fa-solid fa-bed text-[10px]"></i>
-              </div>
-              <span className="text-xs font-bold text-slate-600">{villa.bedrooms} BHK</span>
-           </div>
-           <div className="flex items-center gap-2.5 sm:gap-3">
-              <div className="w-8 h-8 rounded-lg bg-sky-50 flex items-center justify-center text-sky-500 sm:group-hover:bg-sky-500 sm:group-hover:text-white transition-all duration-300">
-                <i className="fa-solid fa-users text-[10px]"></i>
-              </div>
-              <span className="text-xs font-bold text-slate-600">{villa.capacity} Slp.</span>
-           </div>
-        </div>
-
-        <div className="mt-auto flex items-end justify-between gap-4">
-          <div className="flex flex-col">
-            <span className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Start from</span>
-            <div className="flex items-baseline gap-1">
-              <span className="text-2xl sm:text-3xl font-black text-slate-900 font-serif">₹{villa.pricePerNight.toLocaleString()}</span>
-              <span className="text-[9px] sm:text-[11px] font-bold text-slate-400">/nt</span>
+            <div className="bg-white/80 backdrop-blur-md px-3 sm:px-5 py-1.5 sm:py-2 rounded-lg sm:rounded-2xl text-[7px] sm:text-[9px] font-black text-slate-900 shadow-xl uppercase tracking-widest flex items-center gap-2">
+               <i className="fa-solid fa-map-pin text-sky-500"></i> {villa.location.split(',')[0]}
             </div>
           </div>
           <button 
             onClick={handleWhatsAppRedirect}
-            className="w-12 h-12 sm:w-16 sm:h-16 bg-emerald-500 text-white rounded-2xl sm:rounded-3xl flex items-center justify-center transition-all shadow-xl shadow-emerald-500/20 active:scale-90"
-            aria-label="Book on WhatsApp"
+            className="pointer-events-auto w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-2xl hover:bg-emerald-600 transition-all active:scale-90"
           >
-            <i className="fa-brands fa-whatsapp text-2xl"></i>
+            <i className="fa-brands fa-whatsapp text-lg sm:text-2xl"></i>
           </button>
+        </div>
+      </div>
+
+      {/* Details Area */}
+      <div className="p-6 sm:p-10 flex flex-col flex-grow">
+        <div className="flex justify-between items-start mb-4 sm:mb-6">
+          <div className="text-left">
+            <h3 className="text-lg sm:text-2xl font-bold text-slate-900 font-serif leading-tight group-hover:text-sky-600 transition-colors mb-1 truncate max-w-[200px] sm:max-w-xs">{villa.name}</h3>
+            <div className="flex items-center gap-2">
+              <div className="flex text-amber-400 text-[8px] sm:text-[10px]">
+                {[...Array(5)].map((_, i) => (
+                  <i key={i} className={`${i < Math.floor(villa.rating) ? 'fa-solid' : 'fa-regular'} fa-star`}></i>
+                ))}
+              </div>
+              <span className="text-[7px] sm:text-[9px] font-black text-slate-300 uppercase tracking-widest">({villa.ratingCount} Reviews)</span>
+            </div>
+          </div>
+          <div className="text-right">
+             <p className="text-[7px] sm:text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-0.5">FROM</p>
+             <p className="text-base sm:text-2xl font-black text-slate-900 tracking-tight">₹{villa.pricePerNight.toLocaleString()}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6 sm:mb-8">
+           <div className="bg-slate-50/50 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-50 flex flex-col items-center justify-center">
+              <i className="fa-solid fa-bed text-sky-400 text-xs sm:text-base mb-1 sm:mb-2"></i>
+              <span className="text-[8px] sm:text-[10px] font-black text-slate-900">{villa.bedrooms} BHK</span>
+           </div>
+           <div className="bg-slate-50/50 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-50 flex flex-col items-center justify-center">
+              <i className="fa-solid fa-shower text-sky-400 text-xs sm:text-base mb-1 sm:mb-2"></i>
+              <span className="text-[8px] sm:text-[10px] font-black text-slate-900">{villa.bathrooms} Baths</span>
+           </div>
+           <div className="bg-slate-50/50 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-50 flex flex-col items-center justify-center">
+              <i className="fa-solid fa-users text-sky-400 text-xs sm:text-base mb-1 sm:mb-2"></i>
+              <span className="text-[8px] sm:text-[10px] font-black text-slate-900">{villa.capacity} Guests</span>
+           </div>
+        </div>
+
+        <p className="text-slate-500 text-xs sm:text-base font-medium leading-relaxed line-clamp-2 mb-8 text-left opacity-80 italic">
+          "{villa.description}"
+        </p>
+
+        <div className="mt-auto pt-6 sm:pt-10 border-t border-slate-50 flex items-center justify-between">
+           <div className="flex -space-x-2">
+              {['wifi', 'snowflake', 'utensils', 'car'].map((amenity, i) => (
+                <div key={i} className="w-6 h-6 sm:w-9 sm:h-9 rounded-full bg-white border border-slate-100 flex items-center justify-center text-[8px] sm:text-[10px] text-slate-300 shadow-sm">
+                   <i className={`fa-solid fa-${amenity}`}></i>
+                </div>
+              ))}
+              <div className="w-6 h-6 sm:w-9 sm:h-9 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-[6px] sm:text-[8px] font-black text-slate-400 shadow-sm">
+                 +12
+              </div>
+           </div>
+           <button 
+             onClick={(e) => { e.stopPropagation(); onViewDetails(villa.id); }}
+             className="px-5 sm:px-8 py-2 sm:py-3.5 bg-slate-900 text-white rounded-lg sm:rounded-xl text-[8px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-sky-600 transition-all active:scale-95 shadow-lg"
+           >
+             View Details
+           </button>
         </div>
       </div>
     </div>

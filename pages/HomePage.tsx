@@ -52,6 +52,12 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
     onExplore(searchFilters);
   };
 
+  const formatDateLabel = (dateStr: string) => {
+    if (!dateStr) return null;
+    const date = new Date(dateStr);
+    return `${date.getDate()} ${date.toLocaleString('default', { month: 'short' })}`;
+  };
+
   const offer = useMemo(() => {
     const theme = settings.activeTheme;
     switch(theme) {
@@ -168,11 +174,11 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
                   <i className="fa-solid fa-calendar-day text-sky-400 text-lg"></i>
                   <div className="flex items-center gap-3">
                     <span className={`text-base sm:text-2xl font-bold ${searchFilters.checkIn ? 'text-slate-900' : 'text-slate-200'}`}>
-                      {searchFilters.checkIn ? searchFilters.checkIn.split('-').reverse().slice(0, 2).join('/') : 'Arrive'}
+                      {searchFilters.checkIn ? formatDateLabel(searchFilters.checkIn) : 'Arrive'}
                     </span>
                     <i className="fa-solid fa-arrow-right-long text-[10px] text-slate-200"></i>
                     <span className={`text-base sm:text-2xl font-bold ${searchFilters.checkOut ? 'text-slate-900' : 'text-slate-200'}`}>
-                      {searchFilters.checkOut ? searchFilters.checkOut.split('-').reverse().slice(0, 2).join('/') : 'Depart'}
+                      {searchFilters.checkOut ? formatDateLabel(searchFilters.checkOut) : 'Depart'}
                     </span>
                   </div>
                 </div>
@@ -192,10 +198,10 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
         </div>
       </section>
 
-      {/* UNIFIED FLOATING DATE PICKER OVERLAY - Always visible in viewport */}
+      {/* UNIFIED FLOATING DATE PICKER OVERLAY */}
       {showPicker && (
         <div 
-          className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade"
+          className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade"
           onClick={() => setShowPicker(false)}
         >
            <div 
@@ -204,24 +210,19 @@ const HomePage: React.FC<HomePageProps> = ({ villas, settings, onExplore, onView
            >
               <button 
                 onClick={() => setShowPicker(false)}
-                className="absolute -top-3 -right-3 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-900 text-white flex items-center justify-center shadow-2xl z-[1010] active:scale-90 hover:bg-sky-600 transition-colors"
+                className="absolute -top-4 -right-4 w-12 h-12 rounded-full bg-slate-900 text-white flex items-center justify-center shadow-2xl z-[1010] active:scale-90 hover:bg-sky-600 transition-colors"
               >
                 <i className="fa-solid fa-xmark text-lg"></i>
               </button>
 
-              <div className="bg-white rounded-[2.5rem] sm:rounded-[3.5rem] shadow-[0_60px_150px_rgba(0,0,0,0.3)] border border-white/20 overflow-hidden">
-                <DateRangePicker 
-                  startDate={searchFilters.checkIn || ''} 
-                  endDate={searchFilters.checkOut || ''} 
-                  onChange={(s, e) => {
-                    setSearchFilters({...searchFilters, checkIn: s, checkOut: e});
-                    if (s && e) {
-                      // Optional: auto-close after a small delay or keep open until confirmed
-                    }
-                  }} 
-                  onClose={() => setShowPicker(false)} 
-                />
-              </div>
+              <DateRangePicker 
+                startDate={searchFilters.checkIn || ''} 
+                endDate={searchFilters.checkOut || ''} 
+                onChange={(s, e) => {
+                  setSearchFilters({...searchFilters, checkIn: s, checkOut: e});
+                }} 
+                onClose={() => setShowPicker(false)} 
+              />
            </div>
         </div>
       )}
