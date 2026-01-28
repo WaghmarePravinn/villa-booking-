@@ -1,17 +1,20 @@
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Villa, User, SiteSettings } from '../types';
 import DateRangePicker from '../components/DateRangePicker';
+import VillaCard from '../components/VillaCard';
 import { saveLead } from '../services/leadService';
 
 interface VillaDetailPageProps {
   villa: Villa;
+  allVillas: Villa[];
   settings: SiteSettings;
   user: User | null;
   onBack: () => void;
+  onViewDetails: (id: string) => void;
 }
 
-const VillaDetailPage: React.FC<VillaDetailPageProps> = ({ villa, settings, user, onBack }) => {
+const VillaDetailPage: React.FC<VillaDetailPageProps> = ({ villa, allVillas, settings, user, onBack, onViewDetails }) => {
   const [scrolled, setScrolled] = useState(false);
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
@@ -45,9 +48,42 @@ const VillaDetailPage: React.FC<VillaDetailPageProps> = ({ villa, settings, user
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const similarVillas = useMemo(() => {
+    if (!allVillas || allVillas.length === 0) return [];
+
+    return allVillas
+      .filter(v => v.id !== villa.id)
+      .map(v => {
+        let score = 0;
+        // Same location match
+        if (v.location.split(',')[0].trim() === villa.location.split(',')[0].trim()) score += 15;
+        // Price similarity (within 25%)
+        const priceDiff = Math.abs(v.pricePerNight - villa.pricePerNight);
+        const priceTolerance = villa.pricePerNight * 0.25;
+        if (priceDiff <= priceTolerance) score += 10;
+        // Capacity similarity
+        if (Math.abs(v.capacity - villa.capacity) <= 2) score += 5;
+        // Bedroom match
+        if (v.bedrooms === villa.bedrooms) score += 8;
+
+        return { villa: v, score };
+      })
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3)
+      .map(item => item.villa);
+  }, [villa, allVillas]);
+
   const handleWhatsApp = async () => {
     try {
-      await saveLead({ villaId: villa.id, villaName: villa.name, source: 'Direct Inquiry', userId: user?.id, customerName: user?.username, checkIn: checkIn || undefined, checkOut: checkOut || undefined });
+      await saveLead({ 
+        villaId: villa.id, 
+        villaName: villa.name, 
+        source: 'Direct Inquiry', 
+        userId: user?.id, 
+        customerName: user?.username, 
+        checkIn: checkIn || undefined, 
+        checkOut: checkOut || undefined 
+      });
       setShowSuccess(true);
       setTimeout(() => {
         const message = encodeURIComponent(`Namaste! I'm interested in ${villa.name} stay: ${checkIn || 'dates flexible'} to ${checkOut || 'dates flexible'}. Please confirm availability.`);
@@ -222,6 +258,31 @@ const VillaDetailPage: React.FC<VillaDetailPageProps> = ({ villa, settings, user
           </div>
         </div>
       </div>
+
+      {/* RECOMMENDED SECTION - SIMILAR VILLAS */}
+      {similarVillas.length > 0 && (
+        <section className="max-w-7xl mx-auto px-6 py-24 sm:py-48 border-t border-slate-50">
+          <div className="flex flex-col md:flex-row justify-between items-center md:items-end mb-16 sm:mb-24 gap-8">
+            <div className="text-center md:text-left">
+              <div className="flex items-center justify-center md:justify-start gap-4 mb-4">
+                 <div className="w-12 h-[2px] bg-sky-500"></div>
+                 <span className="text-sky-600 font-black uppercase tracking-[0.6em] text-[10px] sm:text-[12px]">Curated Discoveries</span>
+              </div>
+              <h2 className="text-3xl sm:text-7xl font-bold font-serif text-slate-900 leading-[1.1] tracking-tighter">You Might Also Like</h2>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 sm:gap-14">
+            {similarVillas.map(v => (
+              <VillaCard 
+                key={v.id} 
+                villa={v} 
+                whatsappNumber={settings.whatsappNumber} 
+                onViewDetails={onViewDetails} 
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* FIXED MOBILE PERSISTENT BOOKING HUD */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-[220] p-4 bg-white/95 backdrop-blur-3xl border-t border-slate-100 shadow-[0_-15px_50px_rgba(0,0,0,0.12)] pb-[calc(env(safe-area-inset-bottom)+0.8rem)]">

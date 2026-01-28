@@ -103,7 +103,16 @@ const App: React.FC = () => {
   const renderPage = () => {
     if (currentPage === 'villa-detail' && selectedVillaId) {
       const villa = villas.find(v => v.id === selectedVillaId);
-      if (villa) return <VillaDetailPage villa={villa} settings={settings} user={user} onBack={() => handleNavigate('villas')} />;
+      if (villa) return (
+        <VillaDetailPage 
+          villa={villa} 
+          allVillas={villas} 
+          settings={settings} 
+          user={user} 
+          onBack={() => handleNavigate('villas')} 
+          onViewDetails={handleViewDetails}
+        />
+      );
     }
 
     switch (currentPage) {
