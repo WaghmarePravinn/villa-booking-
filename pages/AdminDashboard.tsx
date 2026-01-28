@@ -7,6 +7,7 @@ import { subscribeToLeads, updateLeadStatus, deleteLead } from '../services/lead
 import { subscribeToTestimonials, deleteTestimonial, addTestimonial, updateTestimonial } from '../services/testimonialService';
 import { subscribeToServices, createService, updateService, deleteService } from '../services/serviceService';
 import { generateVillaDescription, generateVillaFromPrompt, generateCustomNarrative } from '../services/geminiService';
+import { runFullDiagnostics, DiagnosticResult } from '../services/diagnosticsService';
 
 interface AdminDashboardProps {
   villas: Villa[];
@@ -54,6 +55,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
   const [testimonialToDelete, setTestimonialToDelete] = useState<Testimonial | null>(null);
 
   const [cloudStatus, setCloudStatus] = useState<{db: boolean, storage: boolean}>({ db: false, storage: false });
+  const [diagnostics, setDiagnostics] = useState<DiagnosticResult[]>([]);
+  const [isRunningDiagnostics, setIsRunningDiagnostics] = useState(false);
+  
   const [progress, setProgress] = useState<ProgressState>({ 
     active: false, message: '', percentage: 0, error: null, status: 'idle'
   });
@@ -90,6 +94,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
   const checkCloud = async () => {
     const res = await verifyCloudConnectivity();
     setCloudStatus(res);
+  };
+
+  const handleRunDiagnostics = async () => {
+    setIsRunningDiagnostics(true);
+    try {
+      const results = await runFullDiagnostics();
+      setDiagnostics(results);
+      checkCloud(); 
+    } catch (err) {
+      console.error("Diagnostics failed", err);
+    } finally {
+      setIsRunningDiagnostics(false);
+    }
   };
 
   const triggerSyncFeedback = (message: string, isDone: boolean = false, error: string | null = null) => {
@@ -322,10 +339,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
     setIsSyncing(true);
     triggerSyncFeedback('Updating Identity...');
     try { 
+      // Always pass the current full state to ensure all fields persist correctly
       await updateSettings(brandingData); 
       triggerSyncFeedback('Identity synchronized', true);
     } catch (err: any) {
-      triggerSyncFeedback('Update failed', false, err.message);
+      console.error("Save branding error:", err);
+      triggerSyncFeedback('Update failed', false, err.message || "Cloud link update failed.");
     } finally {
       setIsSyncing(false);
     }
@@ -370,6 +389,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                <div className="w-full h-1 bg-slate-50 rounded-full overflow-hidden">
                  <div className="h-full bg-sky-500 transition-all duration-700" style={{ width: `${progress.percentage}%` }}></div>
                </div>
+             )}
+             {progress.error && (
+               <p className="mt-2 text-[8px] text-red-500 font-bold uppercase tracking-widest">{progress.error}</p>
              )}
           </div>
         </div>
@@ -750,32 +772,33 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                     <div className="flex flex-col sm:flex-row items-center gap-10">
                        <div className="w-32 h-32 rounded-3xl bg-white border border-slate-100 shadow-inner flex items-center justify-center overflow-hidden relative group">
                           {brandingData.siteLogo ? (
-                             <img src={brandingData.siteLogo} alt="Site Logo" className="w-full h-full object-contain p-4" />
+                             <img src={brandingData.siteLogo} alt="Site Logo" className="w-full h-full object-contain p-4 transition-transform group-hover:scale-105" />
                           ) : (
                              <div className="w-12 h-12 bg-sky-100 rounded-xl flex items-center justify-center text-sky-500">
                                 <i className="fa-solid fa-mountain"></i>
                              </div>
                           )}
                           <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                             <label className="cursor-pointer text-white text-[10px] font-black uppercase tracking-widest">
-                                {isUploading ? <i className="fa-solid fa-rotate animate-spin"></i> : 'Change'}
-                                <input type="file" className="hidden" onChange={handleLogoUpload} disabled={isUploading} />
+                             <label className="cursor-pointer text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                                {isUploading ? <i className="fa-solid fa-rotate animate-spin"></i> : <i className="fa-solid fa-camera"></i>}
+                                <span>{isUploading ? 'Uploading...' : 'Change'}</span>
+                                <input type="file" className="hidden" accept="image/*" onChange={handleLogoUpload} disabled={isUploading} />
                              </label>
                           </div>
                        </div>
                        <div className="flex-grow space-y-4">
                           <div>
                              <p className="text-sm font-bold text-slate-900">Company Logo</p>
-                             <p className="text-[10px] text-slate-400 font-medium">PNG or SVG recommended. Transparent background preferred.</p>
+                             <p className="text-[10px] text-slate-400 font-medium">Upload your company logo. PNG, SVG, or WebP recommended.</p>
                           </div>
                           <div className="flex gap-3">
-                             <label className="px-6 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all cursor-pointer">
-                                {isUploading ? 'Syncing...' : 'Upload New'}
-                                <input type="file" className="hidden" onChange={handleLogoUpload} disabled={isUploading} />
+                             <label className="px-6 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all cursor-pointer shadow-sm">
+                                {isUploading ? 'Processing...' : 'Upload Brand Mark'}
+                                <input type="file" className="hidden" accept="image/*" onChange={handleLogoUpload} disabled={isUploading} />
                              </label>
                              {brandingData.siteLogo && (
                                 <button onClick={() => setBrandingData({...brandingData, siteLogo: ''})} className="px-6 py-2.5 bg-red-50 text-red-500 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-100 transition-all">
-                                   Reset
+                                   Remove
                                 </button>
                              )}
                           </div>
@@ -786,32 +809,43 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                     <div className="space-y-3">
                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">Active Atmosphere</label>
-                       <select className="w-full p-5 bg-slate-50 rounded-2xl font-black text-slate-800 border-none shadow-inner outline-none transition-all cursor-pointer" value={brandingData.activeTheme} onChange={e => setBrandingData({...brandingData, activeTheme: e.target.value as AppTheme})}>
+                       <select className="w-full p-5 bg-slate-50 rounded-2xl font-black text-slate-800 border-none shadow-inner outline-none transition-all cursor-pointer hover:bg-slate-100" value={brandingData.activeTheme} onChange={e => setBrandingData({...brandingData, activeTheme: e.target.value as AppTheme})}>
                           {Object.values(AppTheme).map(t => <option key={t} value={t}>{t}</option>)}
                        </select>
                     </div>
                     <div className="space-y-3">
                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">Core Identity Color</label>
                        <div className="flex items-center gap-4">
-                          <input type="color" className="w-16 h-16 rounded-xl p-1 bg-white border border-slate-100 cursor-pointer shadow-sm" value={brandingData.primaryColor} onChange={e => setBrandingData({...brandingData, primaryColor: e.target.value})} />
-                          <input className="flex-grow p-4 bg-slate-50 rounded-xl font-mono text-[10px] border-none shadow-inner" value={brandingData.primaryColor} onChange={e => setBrandingData({...brandingData, primaryColor: e.target.value})} />
+                          <input type="color" className="w-16 h-16 rounded-xl p-1 bg-white border border-slate-100 cursor-pointer shadow-sm hover:scale-105 transition-transform" value={brandingData.primaryColor} onChange={e => setBrandingData({...brandingData, primaryColor: e.target.value})} />
+                          <input className="flex-grow p-4 bg-slate-50 rounded-xl font-mono text-[10px] border-none shadow-inner focus:ring-2 focus:ring-sky-500 transition-all" value={brandingData.primaryColor} onChange={e => setBrandingData({...brandingData, primaryColor: e.target.value})} />
                        </div>
                     </div>
                  </div>
 
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                    <div className="space-y-3">
+                       <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">Support Email</label>
+                       <input className="w-full p-5 bg-slate-50 rounded-2xl font-bold text-slate-800 border-none shadow-inner focus:ring-2 focus:ring-sky-500 transition-all" value={brandingData.contactEmail} onChange={e => setBrandingData({...brandingData, contactEmail: e.target.value})} />
+                    </div>
+                    <div className="space-y-3">
+                       <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">WhatsApp Hub</label>
+                       <input className="w-full p-5 bg-slate-50 rounded-2xl font-bold text-slate-800 border-none shadow-inner focus:ring-2 focus:ring-sky-500 transition-all" value={brandingData.whatsappNumber} onChange={e => setBrandingData({...brandingData, whatsappNumber: e.target.value})} />
+                    </div>
+                 </div>
+
                  <div className="space-y-3">
-                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">Global Sky Marquee</label>
+                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">Global Sky Marquee (Announcement)</label>
                     <div className="relative">
                       <i className="fa-solid fa-megaphone absolute left-5 top-1/2 -translate-y-1/2 text-sky-400"></i>
-                      <input className="w-full pl-14 pr-6 py-5 bg-slate-900 text-white rounded-2xl font-bold text-xs border-none shadow-2xl" value={brandingData.promoText} onChange={e => setBrandingData({...brandingData, promoText: e.target.value})} />
+                      <input className="w-full pl-14 pr-6 py-5 bg-slate-900 text-white rounded-2xl font-bold text-xs border-none shadow-2xl focus:ring-2 focus:ring-sky-500 outline-none" value={brandingData.promoText} onChange={e => setBrandingData({...brandingData, promoText: e.target.value})} />
                     </div>
                  </div>
 
                  <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 space-y-8">
                     <div className="flex items-center justify-between">
                        <div>
-                          <h3 className="text-xl font-bold font-serif text-slate-900">Offer Popup</h3>
-                          <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Engagement Hook</p>
+                          <h3 className="text-xl font-bold font-serif text-slate-900">Engagement Hook (Offer Popup)</h3>
+                          <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Syncs to guest entry sessions</p>
                        </div>
                        <button 
                          onClick={() => setBrandingData({...brandingData, offerPopup: {...brandingData.offerPopup, enabled: !brandingData.offerPopup.enabled}})}
@@ -821,55 +855,99 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ villas, settings, onAdd
                        </button>
                     </div>
 
-                    <div className={`space-y-6 transition-all ${brandingData.offerPopup.enabled ? 'opacity-100' : 'opacity-30 pointer-events-none'}`}>
+                    <div className={`space-y-6 transition-all duration-500 ${brandingData.offerPopup.enabled ? 'opacity-100' : 'opacity-30 pointer-events-none'}`}>
                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                           <div className="space-y-2">
                              <label className="text-[8px] font-black uppercase text-slate-400 tracking-widest px-1">Hook Title</label>
-                             <input className="w-full p-4 bg-white rounded-xl text-xs font-bold border border-slate-100" value={brandingData.offerPopup.title} onChange={e => setBrandingData({...brandingData, offerPopup: {...brandingData.offerPopup, title: e.target.value}})} />
+                             <input className="w-full p-4 bg-white rounded-xl text-xs font-bold border border-slate-100 focus:ring-2 focus:ring-sky-500 outline-none" value={brandingData.offerPopup.title} onChange={e => setBrandingData({...brandingData, offerPopup: {...brandingData.offerPopup, title: e.target.value}})} />
                           </div>
                           <div className="space-y-2">
                              <label className="text-[8px] font-black uppercase text-slate-400 tracking-widest px-1">Asset Image URL</label>
-                             <input className="w-full p-4 bg-white rounded-xl text-xs font-bold border border-slate-100" value={brandingData.offerPopup.imageUrl} onChange={e => setBrandingData({...brandingData, offerPopup: {...brandingData.offerPopup, imageUrl: e.target.value}})} />
+                             <input className="w-full p-4 bg-white rounded-xl text-xs font-bold border border-slate-100 focus:ring-2 focus:ring-sky-500 outline-none" value={brandingData.offerPopup.imageUrl} onChange={e => setBrandingData({...brandingData, offerPopup: {...brandingData.offerPopup, imageUrl: e.target.value}})} />
                           </div>
                        </div>
                        <div className="space-y-2">
                           <label className="text-[8px] font-black uppercase text-slate-400 tracking-widest px-1">Offer Narrative</label>
-                          <textarea rows={2} className="w-full p-4 bg-white rounded-xl text-xs font-medium border border-slate-100" value={brandingData.offerPopup.description} onChange={e => setBrandingData({...brandingData, offerPopup: {...brandingData.offerPopup, description: e.target.value}})} />
+                          <textarea rows={2} className="w-full p-4 bg-white rounded-xl text-xs font-medium border border-slate-100 focus:ring-2 focus:ring-sky-500 outline-none" value={brandingData.offerPopup.description} onChange={e => setBrandingData({...brandingData, offerPopup: {...brandingData.offerPopup, description: e.target.value}})} />
                        </div>
                        <div className="grid grid-cols-2 gap-6">
                           <div className="space-y-2">
                              <label className="text-[8px] font-black uppercase text-slate-400 tracking-widest px-1">Button Text</label>
-                             <input className="w-full p-4 bg-white rounded-xl text-xs font-bold border border-slate-100" value={brandingData.offerPopup.buttonText} onChange={e => setBrandingData({...brandingData, offerPopup: {...brandingData.offerPopup, buttonText: e.target.value}})} />
+                             <input className="w-full p-4 bg-white rounded-xl text-xs font-bold border border-slate-100 focus:ring-2 focus:ring-sky-500 outline-none" value={brandingData.offerPopup.buttonText} onChange={e => setBrandingData({...brandingData, offerPopup: {...brandingData.offerPopup, buttonText: e.target.value}})} />
                           </div>
                           <div className="space-y-2">
-                             <label className="text-[8px] font-black uppercase text-slate-400 tracking-widest px-1">Navigation Target (ID)</label>
-                             <input className="w-full p-4 bg-white rounded-xl text-xs font-bold border border-slate-100" value={brandingData.offerPopup.buttonLink} onChange={e => setBrandingData({...brandingData, offerPopup: {...brandingData.offerPopup, buttonLink: e.target.value}})} />
+                             <label className="text-[8px] font-black uppercase text-slate-400 tracking-widest px-1">Navigation Target</label>
+                             <input className="w-full p-4 bg-white rounded-xl text-xs font-bold border border-slate-100 focus:ring-2 focus:ring-sky-500 outline-none" value={brandingData.offerPopup.buttonLink} onChange={e => setBrandingData({...brandingData, offerPopup: {...brandingData.offerPopup, buttonLink: e.target.value}})} />
                           </div>
                        </div>
                     </div>
                  </div>
 
                  <button onClick={handleSaveBranding} disabled={isSyncing} className="w-full py-6 bg-sky-600 text-white rounded-[2rem] font-black uppercase text-[11px] tracking-widest shadow-2xl hover:bg-slate-900 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-4">
-                    {isSyncing ? <i className="fa-solid fa-rotate animate-spin"></i> : <i className="fa-solid fa-shield-check"></i>}
-                    Sync Identity
+                    {isSyncing ? <i className="fa-solid fa-rotate animate-spin"></i> : <i className="fa-solid fa-cloud-arrow-up"></i>}
+                    Commit Full Branding Sync
                  </button>
               </div>
            </div>
 
            <div className="lg:col-span-4">
               <div className="bg-slate-900 p-8 sm:p-12 rounded-[2.5rem] sm:rounded-[3.5rem] text-white shadow-2xl relative overflow-hidden sticky top-40">
-                 <h3 className="text-xl sm:text-2xl font-bold font-serif mb-8">Quick Preview</h3>
-                 <div className="p-6 bg-white rounded-[2rem] text-slate-900 shadow-2xl">
-                    <div className="w-full h-3 rounded-full bg-slate-100 mb-4 overflow-hidden relative">
-                       <div className="absolute inset-0 bg-sky-500" style={{background: brandingData.primaryColor}}></div>
+                 <h3 className="text-xl sm:text-2xl font-bold font-serif mb-8 flex items-center gap-3">
+                   <i className="fa-solid fa-eye text-sky-400"></i> Identity Preview
+                 </h3>
+                 <div className="p-8 bg-white rounded-[2rem] text-slate-900 shadow-2xl space-y-6">
+                    <div className="flex items-center gap-4 border-b border-slate-50 pb-4">
+                       <div className="w-10 h-10 rounded-lg bg-slate-50 flex items-center justify-center overflow-hidden border border-slate-100">
+                          {brandingData.siteLogo ? <img src={brandingData.siteLogo} className="w-full h-full object-contain" /> : <i className="fa-solid fa-mountain text-sky-500"></i>}
+                       </div>
+                       <div className="flex-grow">
+                          <div className="w-20 h-2 bg-slate-200 rounded-full mb-1" style={{background: brandingData.primaryColor, opacity: 0.2}}></div>
+                          <div className="w-12 h-1 bg-slate-100 rounded-full"></div>
+                       </div>
                     </div>
-                    <div className="space-y-2">
-                       <div className="w-full h-2 rounded-full bg-slate-100 opacity-50"></div>
-                       <div className="w-2/3 h-2 rounded-full bg-slate-100 opacity-30"></div>
-                       <div className="w-1/2 h-8 rounded-xl mt-4 bg-slate-900 shadow-lg" style={{background: brandingData.primaryColor}}></div>
+                    <div className="space-y-3">
+                       <div className="w-full h-3 rounded-full bg-slate-100 mb-4 overflow-hidden relative">
+                          <div className="absolute inset-0 transition-colors duration-500" style={{background: brandingData.primaryColor}}></div>
+                       </div>
+                       <div className="space-y-2">
+                          <div className="w-full h-2 rounded-full bg-slate-100 opacity-50"></div>
+                          <div className="w-2/3 h-2 rounded-full bg-slate-100 opacity-30"></div>
+                          <div className="w-full h-10 rounded-xl mt-4 text-white flex items-center justify-center text-[8px] font-black uppercase tracking-widest transition-colors duration-500 shadow-lg" style={{background: brandingData.primaryColor}}>
+                             Dynamic Button
+                          </div>
+                       </div>
                     </div>
                  </div>
-                 <p className="mt-8 text-[9px] font-black text-slate-500 uppercase tracking-widest leading-relaxed">Changes synchronize instantly to all active guest sessions.</p>
+                 <div className="mt-8 space-y-4">
+                   <div className="flex items-start gap-3">
+                     <i className="fa-solid fa-circle-check text-emerald-500 text-[10px] mt-0.5"></i>
+                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-relaxed">Changes synchronize instantly to all active guest sessions.</p>
+                   </div>
+                   <div className="flex items-start gap-3">
+                     <i className="fa-solid fa-circle-check text-emerald-500 text-[10px] mt-0.5"></i>
+                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-relaxed">Logo updates reflect in Navbar, Footer, and PWA manifest.</p>
+                   </div>
+                 </div>
+              </div>
+
+              {/* System Integrity (Moved to Brand Tab sidebar for easier access) */}
+              <div className="mt-8 p-8 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm">
+                <div className="flex justify-between items-center mb-6">
+                  <h4 className="font-bold text-slate-900 text-sm">System Health</h4>
+                  <button onClick={handleRunDiagnostics} className="text-sky-600 hover:text-sky-700 transition-all">
+                    <i className={`fa-solid fa-rotate ${isRunningDiagnostics ? 'animate-spin' : ''}`}></i>
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {diagnostics.slice(0, 3).map(test => (
+                    <div key={test.id} className="flex items-center justify-between text-[10px]">
+                      <span className="text-slate-400 font-bold uppercase tracking-widest">{test.name}</span>
+                      <span className={`font-black ${test.status === 'healthy' ? 'text-emerald-500' : 'text-red-500'}`}>
+                        {test.status === 'healthy' ? 'STABLE' : 'ERROR'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
            </div>
         </div>

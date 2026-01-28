@@ -66,11 +66,11 @@ export const subscribeToSettings = (callback: (settings: SiteSettings) => void) 
           offerPopup: data.offer_popup ? (typeof data.offer_popup === 'string' ? JSON.parse(data.offer_popup) : data.offer_popup) : DEFAULT_SETTINGS.offerPopup
         });
       } else {
-        // If row 1 doesn't exist, we fallback to default
-        callback(DEFAULT_SETTINGS);
+        // If row 1 doesn't exist, we provide defaults but don't error out
+        callback(getLocalSettings());
       }
     } catch (e) {
-      callback(DEFAULT_SETTINGS);
+      callback(getLocalSettings());
     }
   };
 
@@ -86,30 +86,35 @@ export const updateSettings = async (settings: Partial<SiteSettings>) => {
   const current = getLocalSettings();
   const updated = { ...current, ...settings };
   
+  // Always update local first for immediate UI feedback
   saveLocalSettings(updated);
 
   if (!isSupabaseAvailable) return;
 
-  const payload: any = { id: 1 };
-  if (settings.activeTheme) payload.active_theme = settings.activeTheme;
-  if (settings.promoText) payload.promo_text = settings.promoText;
-  if (settings.whatsappNumber) payload.whatsapp_number = settings.whatsappNumber;
-  if (settings.contactEmail) payload.contact_email = settings.contactEmail;
-  if (settings.contactPhone) payload.contact_phone = settings.contactPhone;
-  if (settings.siteLogo !== undefined) payload.site_logo = settings.siteLogo;
-  if (settings.primaryColor !== undefined) payload.primary_color = settings.primaryColor;
-  
-  // For jsonb columns, Supabase expects the JS object directly, not a stringified version.
-  if (settings.offerPopup !== undefined) {
-    payload.offer_popup = settings.offerPopup;
-  }
+  // Prepare full payload for Supabase to ensure consistency
+  const payload: any = {
+    id: 1,
+    active_theme: updated.activeTheme,
+    promo_text: updated.promoText,
+    whatsapp_number: updated.whatsappNumber,
+    contact_email: updated.contactEmail,
+    contact_phone: updated.contactPhone,
+    site_logo: updated.siteLogo,
+    primary_color: updated.primaryColor,
+    offer_popup: updated.offerPopup
+  };
 
-  const { error } = await supabase
-    .from(TABLE)
-    .upsert(payload, { onConflict: 'id' });
-    
-  if (error) {
-    console.error("Supabase Settings Sync Failed:", error.message || error);
-    throw handleDbError(error, TABLE);
+  try {
+    const { error } = await supabase
+      .from(TABLE)
+      .upsert(payload, { onConflict: 'id' });
+      
+    if (error) {
+      console.error("Supabase Settings Upsert Failed:", error);
+      throw handleDbError(error, TABLE);
+    }
+  } catch (err: any) {
+    console.error("Critical Settings Sync Failure:", err);
+    throw err;
   }
 };
