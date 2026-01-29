@@ -44,38 +44,38 @@ const Layout: React.FC<LayoutProps> = ({ children, user, settings, onLogout, onN
       </div>
 
       {/* Navigation Bar - Refined for Large Breaks */}
-      <nav className="fixed top-10 left-0 right-0 z-[250] bg-white/95 backdrop-blur-3xl border-b border-slate-100 h-20 sm:h-24 flex items-center shadow-[0_1px_0_0_rgba(0,0,0,0.03)]">
-        <div className="max-w-[1440px] mx-auto px-6 sm:px-12 w-full flex justify-between items-center">
+      <nav className="fixed top-10 left-0 right-0 z-[250] bg-white/95 backdrop-blur-3xl border-b border-slate-100 h-20 sm:h-24 lg:h-28 flex items-center shadow-[0_1px_0_0_rgba(0,0,0,0.03)]">
+        <div className="max-w-[1600px] mx-auto px-8 sm:px-12 lg:px-16 w-full flex justify-between items-center">
           
           {/* Logo Branding Cluster */}
           <div 
-            className="flex items-center cursor-pointer group space-x-4 shrink-0" 
+            className="flex items-center cursor-pointer group space-x-5 shrink-0" 
             onClick={() => onNavigate('home')}
           >
             {settings.siteLogo ? (
-              <img src={settings.siteLogo} alt={BRAND_NAME} className="w-10 h-10 sm:w-12 sm:h-12 object-contain transition-transform duration-500 group-hover:scale-110" />
+              <img src={settings.siteLogo} alt={BRAND_NAME} className="w-10 h-10 sm:w-14 sm:h-14 object-contain transition-transform duration-500 group-hover:scale-110" />
             ) : (
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-xl group-hover:scale-110 bg-sky-600">
-                <i className="fa-solid fa-mountain text-white text-base sm:text-xl"></i>
+              <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-xl group-hover:scale-110 bg-sky-600">
+                <i className="fa-solid fa-mountain text-white text-base sm:text-2xl"></i>
               </div>
             )}
             <div className="flex flex-col">
-              <span className="text-base sm:text-2xl font-black font-serif tracking-tight uppercase leading-none text-slate-900">
+              <span className="text-lg sm:text-2xl lg:text-3xl font-black font-serif tracking-tight uppercase leading-none text-slate-900">
                 Peak Stay
               </span>
-              <span className="text-[6px] sm:text-[10px] font-sans tracking-[0.5em] font-extrabold uppercase opacity-50 mt-1 text-amber-500">
+              <span className="text-[6px] sm:text-[10px] font-sans tracking-[0.5em] font-extrabold uppercase opacity-50 mt-1.5 text-amber-500">
                 DESTINATION
               </span>
             </div>
           </div>
           
           {/* Centralized Desktop Navigation Links */}
-          <div className="hidden lg:flex space-x-12 xl:space-x-16 items-center">
+          <div className="hidden lg:flex space-x-12 xl:space-x-20 items-center">
             {navLinks.map((link) => (
               <button 
                 key={link.id}
                 onClick={() => handleLinkClick(link.id)} 
-                className={`relative text-[10px] font-black uppercase tracking-[0.4em] transition-all py-4 group ${currentPage === link.id ? 'text-sky-600' : 'text-slate-400 hover:text-slate-900'}`}
+                className={`relative text-[10px] lg:text-[11px] font-black uppercase tracking-[0.4em] transition-all py-4 group ${currentPage === link.id ? 'text-sky-600' : 'text-slate-400 hover:text-slate-900'}`}
               >
                 {link.label}
                 <span className={`absolute bottom-0 left-0 h-1 transition-all duration-500 rounded-full bg-sky-600 ${currentPage === link.id ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
@@ -84,13 +84,13 @@ const Layout: React.FC<LayoutProps> = ({ children, user, settings, onLogout, onN
           </div>
 
           {/* Action Hub */}
-          <div className="flex items-center gap-4 sm:gap-8">
+          <div className="flex items-center gap-4 sm:gap-10">
             {user ? (
-              <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-2xl border border-slate-100 shadow-inner">
+              <div className="flex items-center gap-3 bg-slate-50 p-2 lg:p-2.5 rounded-2xl border border-slate-100 shadow-inner">
                 {dashboardId && (
                   <button 
                     onClick={() => onNavigate(dashboardId)}
-                    className={`px-5 sm:px-8 py-2.5 sm:py-3 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${currentPage === dashboardId ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-500 hover:text-slate-900'}`}
+                    className={`px-5 sm:px-8 py-3 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${currentPage === dashboardId ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-500 hover:text-slate-900'}`}
                   >
                     <i className={`fa-solid ${user.role === UserRole.ADMIN ? 'fa-user-shield' : 'fa-gauge-high'}`}></i>
                     <span className="hidden xl:inline">{user.role === UserRole.ADMIN ? 'Admin Dashboard' : 'My Retreats'}</span>
@@ -107,7 +107,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, settings, onLogout, onN
             ) : (
               <button 
                 onClick={() => onNavigate('login')}
-                className="hidden sm:block px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 hover:text-slate-900 transition-all"
+                className="hidden sm:block px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 hover:text-slate-900 transition-all"
               >
                 Log In
               </button>
@@ -115,7 +115,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, settings, onLogout, onN
             
             <button 
               onClick={() => onNavigate('villas')}
-              className="px-8 sm:px-14 py-3.5 sm:py-4 rounded-2xl text-[9px] sm:text-[11px] font-black uppercase tracking-[0.3em] text-white bg-sky-600 hover:bg-slate-900 transition-all shadow-2xl shadow-sky-600/20 active:scale-95"
+              className="px-8 sm:px-16 lg:px-20 py-4 sm:py-5 rounded-2xl text-[9px] sm:text-[11px] font-black uppercase tracking-[0.3em] text-white bg-sky-600 hover:bg-slate-900 transition-all shadow-2xl shadow-sky-600/20 active:scale-95"
             >
               Explore Stays
             </button>
@@ -123,13 +123,34 @@ const Layout: React.FC<LayoutProps> = ({ children, user, settings, onLogout, onN
         </div>
       </nav>
 
-      {/* Main Viewport Wrapper */}
-      <main className="flex-grow pt-32 sm:pt-40 lg:pt-48">
+      {/* Mobile Nav Bar */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-[200] bg-white/95 backdrop-blur-3xl border-t border-slate-100 shadow-[0_-10px_30px_rgba(0,0,0,0.05)] pt-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)]">
+        <div className="flex justify-around items-center px-2">
+          {navLinks.map((link) => (
+            <button 
+              key={link.id}
+              onClick={() => handleLinkClick(link.id)} 
+              className={`flex flex-col items-center justify-center py-1.5 px-3 transition-all duration-300 relative group min-w-[4.5rem] ${currentPage === link.id ? 'text-sky-600' : 'text-slate-400'}`}
+            >
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-1 transition-all duration-300 ${currentPage === link.id ? 'bg-sky-50' : 'bg-transparent'}`}>
+                <i className={`fa-solid ${link.icon} text-lg`}></i>
+              </div>
+              <span className={`text-[7px] font-black uppercase tracking-[0.2em] transition-all duration-300 ${currentPage === link.id ? 'opacity-100' : 'opacity-60'}`}>
+                {link.label}
+              </span>
+              {currentPage === link.id && (
+                <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-sky-600 rounded-full"></span>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <main className="flex-grow pt-32 sm:pt-40 lg:pt-48 pb-24 lg:pb-0">
         {children}
       </main>
 
-      {/* Global Brand Footer */}
-      <footer className="py-20 sm:py-40 bg-slate-900 border-t border-slate-800 mt-20 mb-24 lg:mb-0">
+      <footer className="py-20 sm:py-40 bg-slate-900 border-t border-slate-800 mt-20 mb-20 lg:mb-0">
         <div className="max-w-7xl mx-auto px-6 sm:px-12">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-16 md:gap-24">
             <div className="md:col-span-6 text-center md:text-left">
