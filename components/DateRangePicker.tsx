@@ -81,10 +81,12 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, endDate, g
     }
   };
 
-  const isSelected = (date: Date | null) => {
+  const isToday = (date: Date | null) => {
     if (!date) return false;
-    const dStr = toLocalDateString(date);
-    return dStr === startDate || dStr === endDate;
+    const today = new Date();
+    return date.getDate() === today.getDate() &&
+           date.getMonth() === today.getMonth() &&
+           date.getFullYear() === today.getFullYear();
   };
 
   const isInRange = (date: Date | null) => {
@@ -169,11 +171,16 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, endDate, g
                     {m.days.map((day, dIdx) => {
                       if (!day) return <div key={`empty-${mIdx}-${dIdx}`} />;
                       const dStr = toLocalDateString(day);
-                      const selected = isSelected(day);
-                      const range = isInRange(day);
-                      const past = isPast(day);
                       const isStart = dStr === startDate;
                       const isEnd = dStr === endDate;
+                      const selected = isStart || isEnd;
+                      const range = isInRange(day);
+                      const past = isPast(day);
+                      const today = isToday(day);
+                      
+                      const rangeClass = (range && !selected) 
+                        ? (endDate ? 'bg-sky-100 text-sky-900' : 'bg-sky-50 text-sky-700') 
+                        : '';
                       
                       return (
                         <button
@@ -183,16 +190,19 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, endDate, g
                           onMouseLeave={() => setHoverDate(null)}
                           onClick={(e) => handleDateClick(e, day)}
                           className={`
-                            relative h-12 sm:h-14 w-full flex items-center justify-center text-xs sm:text-sm font-bold transition-all
+                            relative h-12 sm:h-14 w-full flex flex-col items-center justify-center text-xs sm:text-sm font-bold transition-all
                             ${past ? 'text-slate-200 cursor-not-allowed opacity-30' : 'text-slate-700'}
                             ${selected ? 'bg-slate-900 !text-white rounded-2xl z-10 shadow-2xl scale-110' : ''}
-                            ${range && !selected ? 'bg-sky-50 text-sky-600' : ''}
+                            ${rangeClass}
                             ${!past && !selected && !range ? 'hover:bg-slate-100 rounded-2xl' : ''}
-                            ${range && isStart ? 'rounded-l-2xl' : ''}
+                            ${range && isStart && endDate ? 'rounded-l-2xl' : ''}
                             ${range && isEnd ? 'rounded-r-2xl' : ''}
                           `}
                         >
                           {day.getDate()}
+                          {today && !selected && (
+                            <span className="absolute bottom-1.5 w-1 h-1 bg-sky-500 rounded-full"></span>
+                          )}
                         </button>
                       );
                     })}
